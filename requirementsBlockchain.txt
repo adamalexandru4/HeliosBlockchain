@@ -4,14 +4,14 @@ attrs==19.3.0
 base58==2.0.0
 beautifulsoup4==4.8.2
 billiard==3.6.3.0
-bleach==3.1.0
+bleach==3.1.1
 boto==2.27.0
 celery==4.3.0
 certifi==2019.11.28
 chardet==3.0.4
 cytoolz==0.10.1
 defusedxml==0.6.0
-Django==2.2.3
+Django==2.2.10
 django-webtest==1.9.7
 eth-abi==2.1.1
 eth-account==0.4.0
