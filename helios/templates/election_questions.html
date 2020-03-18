@@ -24,15 +24,15 @@
  }
   
 //  ??????????????????????
-  // function save_questions(callback) {
-  //     $.post('./save_questions', {'questions_json' : $.toJSON(QUESTIONS), 'csrf_token': CSRF_TOKEN}, function(result) {
-  //         if (result == "FAILURE") {
-  //           alert("The questions could not be saved. Please check that the URLs you entered are either http:// or https://");
-  //         } else {
-  //           callback();
-  //         }
-  //     });      
-  // }
+<!--   function save_questions(callback) {-->
+<!--       $.post('./save_questions', {'questions_json' : $.toJSON(QUESTIONS), 'csrf_token': CSRF_TOKEN}, function(result) {-->
+<!--           if (result == "FAILURE") {-->
+<!--             alert("The questions could not be saved. Please check that the URLs you entered are either http:// or https://");-->
+<!--           } else {-->
+<!--             callback();-->
+<!--           }-->
+<!--       });-->
+<!--   }-->
   function save_questions(callback) {
       var request = new XMLHttpRequest();
       request.open('POST', './save_questions', true);
@@ -40,6 +40,7 @@
       request.send('questions_json='+JSON.stringify(QUESTIONS)+'&csrf_token='+CSRF_TOKEN);
       request.onload = function() {
         callback();
+        window.location.reload(false); // it may solve the reload div problem
       }
   }
   
@@ -145,11 +146,6 @@
     save_questions(refresh);
   }
 
-  // $(document).ready(function() {
-  //     $('#questions').setTemplateURL("/static/helios/static_templates/question.html");
-
-  //     refresh();
-  // });
   window.onload = function() {
     console.log('Onload.....');
     if (document.readyState != 'loading'){
