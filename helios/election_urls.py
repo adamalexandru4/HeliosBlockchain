@@ -71,7 +71,7 @@ urlpatterns = [
     re_path(r'^cast$', one_election_cast, name='one-election-cast'),
     re_path(r'^cast_confirm$', one_election_cast_confirm, name='one-election-cast-confirm'),
     re_path(r'^password_voter_login$', password_voter_login, name='password-voter-login'),
-    re_path(r'^cast_done$', one_election_cast_done, name='one-election-cast-done'),
+    re_path(r'^cast_done/(?P<ipfs_tinyhash>[^/]+)$', one_election_cast_done, name='one-election-cast-done'),
     
     # post audited ballot
     re_path(r'^post_audited_ballot', post_audited_ballot, name='post-audited-ballot'),

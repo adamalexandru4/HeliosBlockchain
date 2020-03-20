@@ -1,0 +1,19 @@
+{
+  "name": "helios-blockchain",
+  "version": "1.0.0",
+  "description": "Helios is an end-to-end verifiable voting system.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adamalexandru4/HeliosBlockchain.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/adamalexandru4/HeliosBlockchain/issues"
+  },
+  "homepage": "https://github.com/adamalexandru4/HeliosBlockchain#readme"
+}

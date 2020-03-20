@@ -49,7 +49,6 @@ VoterFile = apps.get_model('helios', 'VoterFile')
 Trustee = apps.get_model('helios', 'Trustee')
 AuditedBallot = apps.get_model('helios', 'AuditedBallot')
 
-
 # Parameters for everything
 ELGAMAL_PARAMS = elgamal.Cryptosystem()
 
@@ -216,12 +215,13 @@ def election_new(request):
         try:
           election = Election.objects.create(**election_params)
           election.generate_trustee(ELGAMAL_PARAMS)
+
           return HttpResponseRedirect(settings.SECURE_URL_HOST + reverse(one_election_view, args=[election.uuid]))
         except IntegrityError:
           error = "An election with short name %s already exists" % election_params['short_name']
       else:
         error = "No special characters allowed in the short name."
-    
+
   return render_template(request, "election_new", {'election_form': election_form, 'error': error})
   
 @election_admin(frozen=False)
@@ -746,13 +746,48 @@ def one_election_cast_confirm(request, election):
       cast_vote_id = cast_vote.id,
       status_update_message = status_update_message)
 
+    # cast_vote_final_params = {
+    #   'vote_tinyhash': cast_vote.vote_tinyhash,
+    #   'quarantined_p': cast_vote.quarantined_p,
+    #   'released_from_quarantine_at': cast_vote.released_from_quarantine_at,
+    #   'verified_at': cast_vote.verified_at,
+    #   'invalidated_at': cast_vote.invalidated_at,
+    #   'vote': encrypted_vote,
+    #   'voter': utils.to_json([voter.toJSONDict()])
+    # }
+    # cast_vote_params.update(cast_vote_final_params)
+    #
+    # ipfs_vote_params = {
+    #   'uuid' : uuid.uuid4(),
+    #   'voter_uuid' : voter.uuid,
+    # }
+    #
+    # newIPFSVote = IPFSVote(**ipfs_vote_params)
+    # newIPFSVote.add_ipfs_vote(cast_vote_params, election.short_name, voter)
+    # newIPFSVote.save()
+
+    ipfs_vote_dict = {
+      'vote': encrypted_vote,
+      'vote_hash': cast_vote.vote_hash,
+      'vote_tinyhash': cast_vote.vote_tinyhash,
+      'cast_at': cast_vote.cast_at,
+      'cast_ip': cast_vote.cast_ip,
+      'quarantined_p': cast_vote.quarantined_p,
+      'released_from_quarantine_at': cast_vote.released_from_quarantine_at,
+      'verified_at': cast_vote.verified_at,
+      'invalidated_at': cast_vote.invalidated_at,
+    }
+
+    cast_vote.add_to_ipfs(ipfs_vote_dict, election.short_name)
+    cast_vote.save()
+
     # remove the vote from the store
     del request.session['encrypted_vote']
     
-    return HttpResponseRedirect("%s%s" % (settings.URL_HOST, reverse(one_election_cast_done, args=[election.uuid])))
+    return HttpResponseRedirect("%s%s" % (settings.URL_HOST, reverse(one_election_cast_done, args=[election.uuid, cast_vote.ipfs_tinyhash])))
   
 @election_view()
-def one_election_cast_done(request, election):
+def one_election_cast_done(request, election, ipfs_tinyhash):
   """
   This view needs to be loaded because of the IFRAME, but then this causes 
   problems if someone clicks "reload". So we need a strategy.
@@ -765,6 +800,7 @@ def one_election_cast_done(request, election):
     votes = CastVote.get_by_voter(voter)
     vote_hash = votes[0].vote_hash
     cv_url = get_castvote_url(votes[0])
+    ipfs_vote_hash = votes[0].ipfs_hash
 
     # only log out if the setting says so *and* we're dealing
     # with a site-wide voter. Definitely remove current_voter
@@ -791,7 +827,7 @@ def one_election_cast_done(request, election):
   
   # remote logout is happening asynchronously in an iframe to be modular given the logout mechanism
   # include_user is set to False if logout is happening
-  return render_template(request, 'cast_done', {'election': election,
+  return render_template(request, 'cast_done', {'election': election, 'ipfs_vote_hash': ipfs_vote_hash,
                                                 'vote_hash': vote_hash, 'logout': logout},
                          include_user=(not logout))
 

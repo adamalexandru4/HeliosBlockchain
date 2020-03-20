@@ -14,7 +14,6 @@ import copy
 from django.conf import settings
 from Crypto import Random
 
-
 @shared_task()
 def cast_vote_verify_and_store(cast_vote_id, status_update_message=None, **kwargs):
     cast_vote = CastVote.objects.get(id = cast_vote_id)
@@ -31,9 +30,11 @@ def cast_vote_verify_and_store(cast_vote_id, status_update_message=None, **kwarg
             from .views import get_election_url
 
             user.update_status(status_update_message)
+
     else:
         logger = cast_vote_verify_and_store.get_logger(**kwargs)
         logger.error("Failed to verify and store %d" % cast_vote_id)
+
     
 @shared_task()
 def voters_email(election_id, subject_template, body_template, extra_vars={},

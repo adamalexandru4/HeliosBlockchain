@@ -98,6 +98,8 @@ DATABASES = {
 # URLS / DIRECTORIES         #
 ##############################
 
+VOTES_ROOT = 'helios/votes/'
+
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # https://docs.djangoproject.com/en/2.1/ref/settings/#media-root
 # MEDIA_ROOT and STATIC_ROOT must have different values. Before STATIC_ROOT was introduced, 
