@@ -79,6 +79,7 @@ BOOTH = {};
 
 window.onload = function() {
   console.log('Onload.....');
+
   if (document.readyState != 'loading'){
     startSetup();
   } else {
@@ -122,20 +123,26 @@ Entry point
 function startSetup() {
   console.log('Here.......')
   if (USE_SJCL) {
-      sjcl.random.startCollectors();
-    }
+    sjcl.random.startCollectors();
+  }
 
-    // we're asynchronous if we have SJCL and Worker
-    BOOTH.synchronous = !(USE_SJCL && window.Worker);
+  // we're asynchronous if we have SJCL and Worker
+  BOOTH.synchronous = !(USE_SJCL && window.Worker);
 
-    // we do in the browser only if it's asynchronous
-    BigInt.in_browser = !BOOTH.synchronous;
+  if(BOOTH.synchronous) {
+    console.log("The browser is perfect for Worker");
+    document.getElementById("election_div").style.display = "none";
+    document.getElementById("error_div").style.display = "block"
+  } 
 
-    // set up dummy bigint for fast parsing and serialization
-    if (!BigInt.in_browser)
-      BigInt = BigIntDummy;
+  // we do in the browser only if it's asynchronous
+  BigInt.in_browser = !BOOTH.synchronous;
 
-    BigInt.setup(BOOTH.so_lets_go);
+  // set up dummy bigint for fast parsing and serialization
+  if (!BigInt.in_browser)
+    BigInt = BigIntDummy;
+
+  BigInt.setup(BOOTH.so_lets_go);
 }
 
 
@@ -772,10 +779,10 @@ function shuffleArray(array) {
   <div id="error_div" class="panel" style="display: none;">
     <h3>There's a problem</h3>
     <p>
-      It appears that your browser does not have Java enabled. Helios needs Java to perform encryption within the browser.
+      It appears that your browser does not have capabilities in order to make cryptographic operations. 
     </p>
     <p>
-      You may be able to install Java by visiting <a target="_new" href="http://java.com">java.com</a>.
+	Please update or change your browser
     </p>
   </div>
 
