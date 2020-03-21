@@ -784,10 +784,10 @@ def one_election_cast_confirm(request, election):
     # remove the vote from the store
     del request.session['encrypted_vote']
     
-    return HttpResponseRedirect("%s%s" % (settings.URL_HOST, reverse(one_election_cast_done, args=[election.uuid, cast_vote.ipfs_tinyhash])))
+    return HttpResponseRedirect("%s%s" % (settings.URL_HOST, reverse(one_election_cast_done, args=[election.uuid])))
   
 @election_view()
-def one_election_cast_done(request, election, ipfs_tinyhash):
+def one_election_cast_done(request, election):
   """
   This view needs to be loaded because of the IFRAME, but then this causes 
   problems if someone clicks "reload". So we need a strategy.

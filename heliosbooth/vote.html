@@ -627,7 +627,7 @@ BOOTH.post_audited_ballot = function() {
   //   alert('This audited ballot has been posted.\nRemember, this vote will only be used for auditing and will not be tallied.\nClick "back to voting" and cast a new ballot to make sure your vote counts.');
   // });
   var request = new XMLHttpRequest();
-  request.open('POST', BOOTH.election_url + "/post-audited-ballot", true);
+  request.open('POST', BOOTH.election_url + "post_audited_ballot", true);
   request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
   request.send("audited_ballot="+ BOOTH.audit_trail);
   request.onload = function() {

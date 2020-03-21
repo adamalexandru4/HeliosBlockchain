@@ -1101,7 +1101,7 @@ class CastVote(HeliosModel):
     self.ipfs_tinyhash = ipfs_tinyhash
 
   def add_to_ipfs(self, cast_vote, election_short_name):
-    with ipfshttpclient.connect() as client:
+    with ipfshttpclient.connect('/ip4/127.0.0.1/tcp/5001/http') as client:
       directoryPath = settings.VOTES_ROOT + '/election-' + str(election_short_name)
       Path(directoryPath).mkdir(parents=True, exist_ok=True)
 
