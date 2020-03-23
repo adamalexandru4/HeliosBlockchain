@@ -14,37 +14,36 @@ importScripts("js/jscrypto/jsbn.js",
 	      "js/jscrypto/elgamal.js",
 	      "js/jscrypto/sha1.js",
 	      "js/jscrypto/sha2.js",
-	      "js/jscrypto/helios.js",
-	      "verifier.js");
+	      "js/jscrypto/helios.js");
 
 var console = {
     'log' : function(msg) {
-	self.postMessage({'type':'log','msg':msg});
+    	self.postMessage({'type':'log','msg':msg});
     }
 };
 
-var status_update = function(msg) {
-    self.postMessage({'type' : 'status', 'msg' : msg});
-};
-
 var ELECTION = null;
-var VOTE = null;
 
-function do_verify(message) {
-    console.log("verifying!");
+function do_setup(message) {
+    console.log("setting up worker");
 
-    // json string
-    ELECTION = message.election;
+    ELECTION = HELIOS.Election.fromJSONString(message.election);
+}
 
-    // json object
-    VOTE = message.vote;
+function do_encrypt(message) {
+    console.log("encrypting answer for question " + ELECTION.questions[message.q_num]);
 
-    var result = verify_ballot(ELECTION, VOTE, status_update);
+    var encrypted_answer = new HELIOS.EncryptedAnswer(ELECTION.questions[message.q_num], message.answer, ELECTION.public_key);
+
+    console.log("done encrypting");
 
     // send the result back
     self.postMessage({
 	    'type': 'result',
-		'result': result});
+      'q_num': message.q_num,
+		  'encrypted_answer': encrypted_answer.toJSONObject(true),
+		  'id':message.id
+		});
 }
 
 // receive either

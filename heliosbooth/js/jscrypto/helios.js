@@ -23,7 +23,7 @@ var UTILS = {};
 
 UTILS.array_remove_value = function(arr, val) {
   var new_arr = [];
-  (arr).forEach(function(v, i) {
+  _(arr).each(function(v, i) {
     if (v != val) {
 	new_arr.push(v);
     }
@@ -71,14 +71,9 @@ UTILS.PROGRESS = Class.extend({
 // produce the same object but with keys sorted
 UTILS.object_sort_keys = function(obj) {
   var new_obj = {};
-  // _(_.keys(obj)).each(function(k) {
-  //   new_obj[k] = obj[k];
-  // });
-
-  // Not sure this is correct
-  Object.keys(obj).forEach(function(key) {
-    new_obj[key] = obj[key];
-  })
+  _(_.keys(obj)).each(function(k) {
+    new_obj[k] = obj[k];
+  });
   return new_obj;
 };
 
@@ -140,11 +135,8 @@ HELIOS.Election.fromJSONString = function(raw_json) {
 
 HELIOS.Election.fromJSONObject = function(d) {
   var el = new HELIOS.Election();
-  // _.extend(el, d);
-  for (var i in d) {
-    el[i] = d[i];
-  }
-
+  _.extend(el, d);
+  
   // empty questions
   if (!el.questions)
     el.questions = [];
@@ -173,9 +165,8 @@ BALLOT.pretty_choices = function(election, ballot) {
     var answers = ballot.answers;
 
     // process the answers
-    // Converted
-    var choices = (questions).map(function(q, q_num) {
-	    return (answers[q_num]).map(function(ans) {
+    var choices = _(questions).map(function(q, q_num) {
+	    return _(answers[q_num]).map(function(ans) {
 	      return questions[q_num].answers[ans];
 	    });
     });
@@ -270,7 +261,7 @@ HELIOS.EncryptedAnswer = Class.extend({
     for (var i=0; i<question.answers.length; i++) {
       var index, plaintext_index;
       // if this is the answer, swap them so m is encryption 1 (g)
-      if (answer.includes(i)) {
+      if (_(answer).include(i)) {
         plaintext_index = 1;
         num_selected_answers += 1;
       } else {
@@ -359,18 +350,16 @@ HELIOS.EncryptedAnswer = Class.extend({
   
   toString: function() {
     // get each ciphertext as a JSON string
-    // converted
-    var choices_strings = (this.choices).map(function(c) {return c.toString();});
+    var choices_strings = _(this.choices).map(function(c) {return c.toString();});
     return choices_strings.join("|");
   },
   
   toJSONObject: function(include_plaintext) {
     var return_obj = {
-      // Converted
-      'choices' : (this.choices).map(function(choice) {
+      'choices' : _(this.choices).map(function(choice) {
         return choice.toJSONObject();
       }),
-      'individual_proofs' : (this.individual_proofs).map(function(disj_proof) {
+      'individual_proofs' : _(this.individual_proofs).map(function(disj_proof) {
         return disj_proof.toJSONObject();
       })
     };
@@ -383,8 +372,7 @@ HELIOS.EncryptedAnswer = Class.extend({
     
     if (include_plaintext) {
       return_obj.answer = this.answer;
-       // Converted
-       return_obj.randomness = (this.randomness).map(function(r) {
+      return_obj.randomness = _(this.randomness).map(function(r) {
         return r.toJSONObject();
       });
     }
@@ -395,12 +383,11 @@ HELIOS.EncryptedAnswer = Class.extend({
 
 HELIOS.EncryptedAnswer.fromJSONObject = function(d, election) {
   var ea = new HELIOS.EncryptedAnswer();
-  // Converted
-  ea.choices = (d.choices).map(function(choice) {
+  ea.choices = _(d.choices).map(function(choice) {
     return ElGamal.Ciphertext.fromJSONObject(choice, election.public_key);
   });
   
-  ea.individual_proofs = (d.individual_proofs).map(function (p) {
+  ea.individual_proofs = _(d.individual_proofs).map(function (p) {
     return ElGamal.DisjunctiveProof.fromJSONObject(p);
   });
   
@@ -408,13 +395,12 @@ HELIOS.EncryptedAnswer.fromJSONObject = function(d, election) {
   
   // possibly load randomness and plaintext
   if (d.randomness) {
-    // Converted
-    ea.randomness = (d.randomness).map(function(r) {
+    ea.randomness = _(d.randomness).map(function(r) {
       return BigInt.fromJSONObject(r);
     });
     ea.answer = d.answer;
   }
-
+  
   return ea;
 };
 
@@ -437,9 +423,7 @@ HELIOS.EncryptedVote = Class.extend({
 
     if (progress) {
       // set up the number of ticks
-      // _(election.questions).each(function(q, q_num) {
-        // Converted
-        (election.questions).forEach(function(q) {
+      _(election.questions).each(function(q, q_num) {
         // + 1 for the overall proof
         progress.addTicks(q.answers.length);
         if (q.max != null)
@@ -457,33 +441,27 @@ HELIOS.EncryptedVote = Class.extend({
 
   toString: function() {
     // for each question, get the encrypted answer as a string
-    // Converted
-    var answer_strings = (this.encrypted_answers).map(function(a) {return a.toString();});
-      
+    var answer_strings = _(this.encrypted_answers).map(function(a) {return a.toString();});
+    
     return answer_strings.join("//");
   },
   
   clearPlaintexts: function() {
-    // _(this.encrypted_answers).each(function(ea) {
-      // Converted
-      (this.encrypted_answers).forEach(function(ea) {
+    _(this.encrypted_answers).each(function(ea) {
       ea.clearPlaintexts();
     });
   },
   
   verifyEncryption: function(questions, pk) {
     var overall_result = true;
-    // _(this.encrypted_answers).each(function(ea, i) {
-    // Converted
-    (this.encrypted_answers).forEach(function(ea, i) {
+    _(this.encrypted_answers).each(function(ea, i) {
       overall_result = overall_result && ea.verifyEncryption(questions[i], pk);
     });
     return overall_result;
   },
   
   toJSONObject: function(include_plaintext) {
-    // Converted
-      var answers = (this.encrypted_answers).map(function(ea,i) {
+      var answers = _(this.encrypted_answers).map(function(ea,i) {
       return ea.toJSONObject(include_plaintext);
     });
     
@@ -510,18 +488,14 @@ HELIOS.EncryptedVote = Class.extend({
     var self = this;
     
     // for each question and associate encrypted answer
-    // _(this.encrypted_answers).each(function(enc_answer, ea_num) {
-      // Converted
-      (this.encrypted_answers).forEach(function(enc_answer, ea_num) {
+    _(this.encrypted_answers).each(function(enc_answer, ea_num) {
         var overall_result = 1;
 
         // the max number of answers (decides whether this is approval or not and requires an overall proof)
         var max = self.election.questions[ea_num].max;
 
         // go through each individual proof
-        // _(enc_answer.choices).each(function(choice, choice_num) {
-        // Converted
-        (enc_answer.choices).forEach(function(choice, choice_num) {
+        _(enc_answer.choices).each(function(choice, choice_num) {
           var result = choice.verifyDisjunctiveProof(zero_or_one, enc_answer.individual_proofs[choice_num], ElGamal.disjunctive_challenge_generator);
           outcome_callback(ea_num, choice_num, result, choice);
           
@@ -556,8 +530,7 @@ HELIOS.EncryptedVote.fromJSONObject = function(d, election) {
     
   var ev = new HELIOS.EncryptedVote(election);
   
-  // Converted
-  ev.encrypted_answers = (d.answers).map(function(ea) {
+  ev.encrypted_answers = _(d.answers).map(function(ea) {
     return HELIOS.EncryptedAnswer.fromJSONObject(ea, election);
   });
   
@@ -569,15 +542,14 @@ HELIOS.EncryptedVote.fromJSONObject = function(d, election) {
 
 // create an encrypted vote from a set of answers
 HELIOS.EncryptedVote.fromEncryptedAnswers = function(election, enc_answers) {
-  var enc_vote = new HELIOS.EncryptedVote(election, null);
-  enc_vote.encrypted_answers = [];
-  // _(enc_answers).each(function(enc_answer, answer_num) {
-  // Converted
-  (enc_answers).forEach(function(enc_answer, answer_num) {
-    enc_vote.encrypted_answers[answer_num] = enc_answer;
-  });
-  return enc_vote;
+    var enc_vote = new HELIOS.EncryptedVote(election, null);
+    enc_vote.encrypted_answers = [];
+    _(enc_answers).each(function(enc_answer, answer_num) {
+	    enc_vote.encrypted_answers[answer_num] = enc_answer;
+	});
+    return enc_vote;
 };
+
 //
 // Tally abstraction
 //
@@ -589,9 +561,8 @@ HELIOS.Tally = Class.extend({
   },
   
   toJSONObject: function() {
-    // Converted
-    var tally_json_obj = (this.tally).map(function(one_q) {
-      return (one_q).map(function(one_a) {
+    var tally_json_obj = _(this.tally).map(function(one_q) {
+      return _(one_q).map(function(one_a) {
         return one_a.toJSONObject();
       });
     });
@@ -606,9 +577,9 @@ HELIOS.Tally = Class.extend({
 
 HELIOS.Tally.fromJSONObject = function(d, public_key) {
   var num_tallied = d['num_tallied'];
-  // Converted
-  var raw_tally = (d['tally']).map(function(one_q) {
-    return (one_q).map(function(one_a) {
+  
+  var raw_tally = _(d['tally']).map(function(one_q) {
+    return _(one_q).map(function(one_a) {
       var new_val= ElGamal.Ciphertext.fromJSONObject(one_a, public_key);
       return new_val;
     });
@@ -626,19 +597,16 @@ HELIOS.jsonify_list_of_lists = function(lol) {
   if (!lol)
     return null;
     
-  // return _(lol).map(function(sublist) {return _(sublist).map(function(item) {return item.toJSONObject();})});
-  // Converted
-  return (lol).map(function(sublist) {return (sublist).map(function(item) {return item.toJSONObject();})});
+  return _(lol).map(function(sublist) {return _(sublist).map(function(item) {return item.toJSONObject();})});
 };
 
 // a utility function for doing the opposite with an item-level de-jsonifier
 HELIOS.dejsonify_list_of_lists = function(lol, item_dejsonifier) {
   if (!lol)
     return null;
-  // Converted
-  return (lol).map(function(sublist) {return (sublist).map(function(item) {return item_dejsonifier(item);})});
+    
+  return _(lol).map(function(sublist) {return _(sublist).map(function(item) {return item_dejsonifier(item);})});
 }
-
 
 HELIOS.Trustee = Class.extend({
   init: function(uuid, public_key, public_key_hash, pok, decryption_factors, decryption_proofs) {
