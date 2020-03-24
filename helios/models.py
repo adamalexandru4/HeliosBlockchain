@@ -31,12 +31,6 @@ import csv, copy
 
 # from helios.views import get_election_url
 
-# IPFS libraries
-import ipfshttpclient
-import json
-from django.core.serializers.json import DjangoJSONEncoder
-from pathlib import Path
-
 class HeliosModel(models.Model, datatypes.LDObjectContainer):
   class Meta(object):
     abstract = True
@@ -992,11 +986,6 @@ class CastVote(HeliosModel):
   # the reference to the voter provides the voter_uuid
   voter = models.ForeignKey(Voter, models.CASCADE)
 
-  # ipfs fields
-  # election_short_name = models.CharField(max_length=100)
-  ipfs_tinyhash = models.CharField(max_length=50, null=True, unique=True)
-  ipfs_hash = models.CharField(max_length=250, null=True)
-
   # the actual encrypted vote
   vote = LDObjectField(type_hint = 'legacy/EncryptedVote')
 
@@ -1085,32 +1074,6 @@ class CastVote(HeliosModel):
       self.voter.store_vote(self)
     
     return result
-
-  def set_tinyhash_ipfs(self):
-    safe_hash = self.ipfs_hash
-    for c in ['/', '+']:
-      safe_hash = safe_hash.replace(c, '')
-
-    length = 8
-    while True:
-      ipfs_tinyhash = safe_hash[:length]
-      if CastVote.objects.filter(ipfs_tinyhash=ipfs_tinyhash).count() == 0:
-        break
-      length += 1
-
-    self.ipfs_tinyhash = ipfs_tinyhash
-
-  def add_to_ipfs(self, cast_vote, election_short_name):
-    with ipfshttpclient.connect('/ip4/127.0.0.1/tcp/5001/http') as client:
-      directoryPath = settings.VOTES_ROOT + '/election-' + str(election_short_name)
-      Path(directoryPath).mkdir(parents=True, exist_ok=True)
-
-      with open(directoryPath + '/' + 'vote' + cast_vote['vote_tinyhash'] + '.json', 'w',
-                encoding='utf-8') as f:
-        json.dump(cast_vote, f, ensure_ascii=False, indent=4, cls=DjangoJSONEncoder)
-        self.ipfs_hash = client.add(f.name)['Hash']
-        self.set_tinyhash_ipfs()
-
 
   def issues(self, election):
     """
