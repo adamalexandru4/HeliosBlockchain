@@ -98,8 +98,6 @@ DATABASES = {
 # URLS / DIRECTORIES         #
 ##############################
 
-VOTES_ROOT = 'helios/votes/'
-
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # https://docs.djangoproject.com/en/2.1/ref/settings/#media-root
 # MEDIA_ROOT and STATIC_ROOT must have different values. Before STATIC_ROOT was introduced, 
@@ -201,7 +199,7 @@ INSTALLED_APPS = (
     ## HELIOS stuff
     'helios_auth',
     'helios',
-    'server_ui',
+    'server_ui'
 )
 
 
@@ -418,3 +416,35 @@ if ROLLBAR_ACCESS_TOKEN:
     'access_token': ROLLBAR_ACCESS_TOKEN,
     'environment': 'development' if DEBUG else 'production',  
   }
+
+##############################
+# ETHEREUM                   #
+##############################
+
+import os, settings
+from web3 import Web3, HTTPProvider
+from helios.ethereum.interface import ContractInterface
+
+w3 = Web3(HTTPProvider('http://127.0.0.1:8545'))
+CONTRACTS_DIR = os.path.abspath(os.getcwd() + '/helios/ethereum/contracts/')
+HELIOS_ADMINISTRATOR_CONTRACT_INTERFACE = ContractInterface(w3, 'HeliosAdministrator', CONTRACTS_DIR)
+HELIOS_ADMINISTRATOR_CONTRACT_INSTANCE = None
+
+HELIOS_ELECTION_CONTRACT_INTERFACE = ContractInterface(w3, 'HeliosElection', CONTRACTS_DIR)
+HELIOS_ELECTION_CONTRACT_INSTANCES = []
+
+ADMINISTRATOR_CONTRACT_DEPLOYED = False
+
+def deploy_administrator_contract():
+    if (not settings.ADMINISTRATOR_CONTRACT_DEPLOYED):
+        HELIOS_ADMINISTRATOR_CONTRACT_INTERFACE.compile_source_files()
+        HELIOS_ADMINISTRATOR_CONTRACT_INTERFACE.deploy_contract()
+        HELIOS_ADMINISTRATOR_CONTRACT_INSTANCE = HELIOS_ADMINISTRATOR_CONTRACT_INTERFACE.get_instance()
+        settings.ADMINISTRATOR_CONTRACT_DEPLOYED = True
+
+def compile_election_contract():
+    HELIOS_ELECTION_CONTRACT_INTERFACE.compile_source_files()
+    return HELIOS_ADMINISTRATOR_CONTRACT_INTERFACE.all_compiled_contracts
+
+DEPLOY_ADMINISTRATOR_CONTRACT = deploy_administrator_contract()
+COMPILE_ELECTION_CONTRACT = compile_election_contract()

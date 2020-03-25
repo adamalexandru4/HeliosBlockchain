@@ -21,6 +21,8 @@ urlpatterns = [
     re_path(r'^extend$', one_election_extend, name='one-election-extend'),
     re_path(r'^archive$', one_election_archive, name='one-election-archive'),
     re_path(r'^copy$', one_election_copy, name='one-election-copy'),
+    re_path(r'^freeze', one_election_freeze, name='one-election-freeze'),
+    re_path(r'^deploy', one_election_deploy_contract, name='one-election-deploy-contract'),
 
     # badge
     re_path(r'^badge$', election_badge, name='election-badge'),

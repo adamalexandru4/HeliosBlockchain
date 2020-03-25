@@ -40,6 +40,13 @@ class Election(HeliosModel):
   
   uuid = models.CharField(max_length=50, null=False)
 
+  # Ethereum smart contract address deployed
+  contract_address = models.CharField(max_length = 100, null = True)
+  owner_address = models.CharField(max_length = 100, null = True)
+  questions_added_to_contract = models.IntegerField(default = 0, null = False)
+  election_pubkey_added_to_contract = models.BooleanField(default = False, null = False)
+  voters_added_to_contract = models.IntegerField(default = 0, null = False)
+
   # keep track of the type and version of election, which will help dispatch to the right
   # code, both for crypto and serialization
   # v3 and prior have a datatype of "legacy/Election"
@@ -350,6 +357,40 @@ class Election(HeliosModel):
     """
     voting_end = self.voting_ended_at or self.voting_extended_until or self.voting_ends_at
     return (voting_end != None and datetime.datetime.utcnow() >= voting_end) or self.encrypted_tally
+
+  @property
+  def issues_deploy_contract(self):
+    issues = []
+    if self.contract_address == None:
+      issues.append({
+        'type': 'smart contract',
+        'action': 'deploy the smart contract'
+      })
+
+    if self.owner_address == None:
+      issues.append({
+        'type': 'owner contract',
+        'action': 'there is no owner of smart contract'
+      })
+
+    if self.election_pubkey_added_to_contract == False:
+      issues.append({
+        'type': 'election pubkey',
+        'action': 'add election pubkey to smart contract'
+      })
+
+    if self.voters_added_to_contract != self.voter_set.count():
+      issues.append({
+        'type': 'add voters',
+        'action': 'not all voters are added in the contract'
+      })
+
+    if self.questions_added_to_contract != len(self.questions):
+      issues.append({
+        'type': 'questions not added',
+        'action': 'add all questions to contract'
+      })
+    return issues
 
   @property
   def issues_before_freeze(self):

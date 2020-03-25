@@ -194,6 +194,8 @@ def election_new(request):
   if request.method == "GET":
     election_form = forms.ElectionForm(initial={'private_p': settings.HELIOS_PRIVATE_DEFAULT,
                                                 'help_email': user.info.get("email", '')})
+
+    
   else:
     check_csrf(request)
     election_form = forms.ElectionForm(request.POST)
@@ -222,7 +224,8 @@ def election_new(request):
       else:
         error = "No special characters allowed in the short name."
 
-  return render_template(request, "election_new", {'election_form': election_form, 'error': error})
+  return render_template(request, "election_new", {'election_form': election_form,
+                                                   'error': error})
   
 @election_admin(frozen=False)
 def one_election_edit(request, election):
@@ -303,7 +306,15 @@ def one_election_view(request, election):
   user = get_user(request)
   admin_p = user_can_admin_election(user, election)
   can_feature_p = user_can_feature_election(user, election)
-  
+
+  contract_address = None
+  if election.contract_address:
+    contract_address = election.contract_address
+
+  owner_address = None
+  if election.owner_address:
+    owner_address = election.owner_address
+
   notregistered = False
   eligible_p = True
   
@@ -355,7 +366,8 @@ def one_election_view(request, election):
                           'can_feature_p': can_feature_p, 'election_url' : election_url, 
                           'vote_url': vote_url, 'election_badge_url' : election_badge_url,
                           'show_result': show_result,
-                          'test_cookie_url': test_cookie_url})
+                          'test_cookie_url': test_cookie_url,
+                          'owner_address': owner_address, 'contract_address': contract_address})
 
 def test_cookie(request):
   continue_url = request.GET['continue_url']
@@ -1054,6 +1066,32 @@ def one_election_save_questions(request, election):
   else:
     return FAILURE
 
+@election_admin(frozen=True)
+def one_election_deploy_contract(request, election):
+  issues = election.issues_deploy_contract
+
+  try:
+    import json
+    election_contract = settings.COMPILE_ELECTION_CONTRACT.get(settings.CONTRACTS_DIR + '/HeliosElection.sol:HeliosElection')
+    election_contract_abi_json = json.dumps(election_contract.get('abi'))
+    election_contract_bytecode = election_contract.get('bin')
+  except:
+    return HttpResponseForbidden('Election contract not compiled')
+
+  if request.method == "GET":
+    return render_template(request, 'election_deploy_contract', {'election': election,
+                                                                 'issues' : issues,
+                                                                 'election_contract_bytecode': election_contract_bytecode,
+                                                                 'election_contract_abi': election_contract_abi_json,
+                                                                 'issues_p' : len(issues) > 0})
+  else:
+
+    if get_user(request):
+      return HttpResponseRedirect(settings.SECURE_URL_HOST + reverse(one_election_view, args=[election.uuid]))
+    else:
+      return SUCCESS
+
+
 @transaction.atomic
 @election_admin(frozen=False)
 def one_election_freeze(request, election):
@@ -1067,10 +1105,7 @@ def one_election_freeze(request, election):
     
     election.freeze()
 
-    if get_user(request):
-      return HttpResponseRedirect(settings.SECURE_URL_HOST + reverse(one_election_view, args=[election.uuid]))
-    else:
-      return SUCCESS    
+    return HttpResponseRedirect(settings.SECURE_URL_HOST + reverse(one_election_deploy_contract, args=[election.uuid]))
 
 def _check_election_tally_type(election):
   for q in election.questions:

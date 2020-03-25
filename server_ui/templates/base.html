@@ -6,9 +6,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width">
   <title>{% block title %}{% endblock %}</title>
-  
+
   <link rel="stylesheet" href="/static/foundation/css/foundation.css">
   <link rel="stylesheet" href="/static/foundation-tweaks.css">
+
 
 {% if settings.DEBUG %}  
 
@@ -17,7 +18,10 @@
 {% endif %}
   
   {% block js %}
+
+  <script language="javascript" src="/static/jquery.min.js"></script>
   {% endblock %}
+
   
   {% block extra-head %}{% endblock %}
 </head>
@@ -66,10 +70,11 @@
 
 
   <!-- Main Page Content and Sidebar -->
-
+      <div class="container">
   <div class="row" id="contentbody">
       {% block content %}{% endblock %}
   </div>
+</div>
   
   <div class="push"></div>
   </div>
@@ -98,8 +103,8 @@ powered by <a href="http://heliosvoting.org">Helios Voting</a>.
     </div>
   
   </div>
-      <script>
-	// $(document).foundation();
-      </script>     
+
+    {% block end-js %}
+    {% endblock %}
 </body>
 </html>
