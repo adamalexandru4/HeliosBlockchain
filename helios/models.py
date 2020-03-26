@@ -44,7 +44,9 @@ class Election(HeliosModel):
   contract_address = models.CharField(max_length = 100, null = True)
   owner_address = models.CharField(max_length = 100, null = True)
   deploy_transaction = models.CharField(max_length = 100, null = True)
-  questions_added_to_contract = models.IntegerField(default = 0, null = False)
+
+  no_questions_added_to_contract = models.IntegerField(default = 0, null = False)
+
   election_pubkey_added_to_contract = models.BooleanField(default = False, null = False)
   voters_added_to_contract = models.IntegerField(default = 0, null = False)
 
@@ -386,7 +388,7 @@ class Election(HeliosModel):
         'action': 'not all voters are added in the contract'
       })
 
-    if self.questions_added_to_contract != len(self.questions):
+    if self.no_questions_added_to_contract != len(self.questions):
       issues.append({
         'type': 'questions not added',
         'action': 'add all questions to contract'
@@ -703,7 +705,13 @@ class Election(HeliosModel):
       prettified_result.append({'question': q['short_name'], 'answers': pretty_question})
 
     return prettified_result
-    
+
+class QuestionBlockchain(models.Model):
+  no_question = models.IntegerField(null = False)
+  transaction_hash = models.CharField(max_length = 100, null = True)
+  election = models.ForeignKey(Election, on_delete=models.CASCADE)
+
+
 class ElectionLog(models.Model):
   """
   a log of events for an election

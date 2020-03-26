@@ -41,6 +41,7 @@ class ContractInterface(object):
         # SETUP solc version
         set_solc_version('v0.5.16')
 
+        self.all_compiled_contracts = None
         self.web3 = web3
         self.contract_to_deploy = contract_to_deploy
         self.contract_directory = contract_directory

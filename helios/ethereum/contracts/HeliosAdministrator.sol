@@ -14,6 +14,7 @@ contract HeliosAdministrator {
     }
 
     function createElection(address _electionAddress) public {
+        require(msg.sender == owner);
         elections.push(_electionAddress);
     }
 

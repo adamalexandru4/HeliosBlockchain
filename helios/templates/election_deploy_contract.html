@@ -95,8 +95,12 @@ Registration for your election is currently <b>closed</b>, which means only the 
         </div>
       </div>
       <div class="col-4 align-self-center text-center">
+
         <button type="button" id="add-question-{{forloop.counter}}" class="btn btn-warning add-question-button" style="display: inline;">Add question</button>
-        <div class="alert alert-success question-added" id="question-{{forloop.counter}}-added" role="alert" style="display: none;">Question added</div>
+        <div class="alert alert-success question-added" id="question-{{forloop.counter}}-added" role="alert" style="display: none;">
+          Question added
+          <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="question-{{forloop.counter}}-transaction" value="DB issue, check blockchain">
+        </div>
       </div>
       {% endfor %}
     </div>
@@ -115,34 +119,23 @@ Registration for your election is currently <b>closed</b>, which means only the 
   </section>
 </div>
 
+
     <script>
     var contractDeployed = false;
+    var noQuestionsAdded = {{ election.no_questions_added_to_contract }};
     var nextButton, buttonEnabled;
 
     const election_abi = JSON.parse(" {{ election_contract_abi|escapejs }}" );
     const election_bytecode = "{{ election_contract_bytecode }}";
 
     var electionContract;
+    var electionContractAddress;
     var questions = {{ questions | safe }};
+    var questions_blockchain = {{ questions_blockchain | safe }};
 
     var created_date_uint = new Date('{{election.created_at|date:"D, d M Y H:i:s"}}').getTime();
 
     $(document).ready(async function() {
-
-        if({{ contract_already_deployed }}) {
-          nextButton = $(".actions ul li:nth-child(2) a");
-          buttonEnabled = $(".actions ul li:nth-child(2)").removeClass("disabled").attr("aria-disabled", "false");
-
-          $("#before-deploy").hide();
-          $("#before-deploy-button").hide();
-          $("#after-deploy").show();
-          $("#smart-contract-address").val("{{election.contract_address}}");
-          $("#transaction-hash").val("{{election.deploy_transaction}}");
-          contractDeployed = true;
-        } else {
-            nextButton = $(".actions ul li:nth-child(2) a");
-            buttonEnabled = $(".actions ul li:nth-child(2)").addClass("disabled").attr("aria-disabled", "true");
-        }
 
         var accounts;
         if (window.ethereum) {
@@ -154,6 +147,40 @@ Registration for your election is currently <b>closed</b>, which means only the 
            } catch(error) {
               console.log(error);
            }
+        }
+
+        if({{ contract_already_deployed }}) {
+          nextButton = $(".actions ul li:nth-child(2) a");
+          buttonEnabled = $(".actions ul li:nth-child(2)").removeClass("disabled").attr("aria-disabled", "false");
+
+          $("#before-deploy").hide();
+          $("#before-deploy-button").hide();
+          $("#after-deploy").show();
+          $("#smart-contract-address").val("{{election.contract_address}}");
+          $("#transaction-hash").val("{{election.deploy_transaction}}");
+          contractDeployed = true;
+
+          {% if election.contract_address %}
+            electionContractAddress = '{{election.contract_address}}';
+          {% endif %}
+
+          electionContract = new web3.eth.Contract(election_abi, electionContractAddress, {
+                                from: accounts[0],
+                                gasPrice: web3.utils.toHex(web3.utils.toWei('3', 'gwei'))
+                            });
+
+          electionContract.methods.getNoQuestions().call({from: accounts[0]})
+            .then((result) => {
+              console.log(result + " questions already registered");
+              for(var i = 0; i < result; i ++) {
+                $("#add-question-" + (i + 1)).hide();
+                $("#question-" + (i + 1) + "-added").show();
+                $("#question-" + (i + 1) + "-transaction").val(questions_blockchain[i].transaction_hash);
+              }
+            });
+        } else {
+            nextButton = $(".actions ul li:nth-child(2) a");
+            buttonEnabled = $(".actions ul li:nth-child(2)").addClass("disabled").attr("aria-disabled", "true");
         }
 
         $( "#before-deploy-button" ).click(async function() {
@@ -191,26 +218,26 @@ Registration for your election is currently <b>closed</b>, which means only the 
                     dataType: 'json',
                     success: function (data) {
                       if (data.message) {
-                        alert(data.message);
-                      } else {
-                        alert("Data not received");
+                        var nextButton = $(".actions ul li:nth-child(2) a");
+                        buttonEnabled = $(".actions ul li:nth-child(2)").removeClass("disabled").attr("aria-disabled", "false");
+
+                        $("#before-deploy").hide();
+                        $("#before-deploy-button").hide();
+                        $("#after-deploy").show();
+                        $("#smart-contract-address").val(newContractInstance.options.address);
+                        contractDeployed = true;
+                        electionContractAddress = newContractInstance.options.address;
+
+                        $("#example-async").find(".error").removeClass("error");
+                      } else if(data.error) {
+                        alert("Contract not registered");
+                        console.log(data.error);
                       }
                     },
                     error: function(jqXHR, textStatus, errorThrown) {
-                      console.log("Error");
+                      console.log("Error " + textStatus);
                     }
                   });
-
-                  var nextButton = $(".actions ul li:nth-child(2) a");
-                  buttonEnabled = $(".actions ul li:nth-child(2)").removeClass("disabled").attr("aria-disabled", "false");
-
-                  $("#before-deploy").hide();
-                  $("#before-deploy-button").hide();
-                  $("#after-deploy").show();
-                  $("#smart-contract-address").val(newContractInstance.options.address);
-                  contractDeployed = true;
-
-                  $("#example-async").find(".error").removeClass("error");
               });
             } catch (error) {
                 console.log(error);
@@ -227,27 +254,103 @@ Registration for your election is currently <b>closed</b>, which means only the 
             answers[i] = web3.utils.asciiToHex(answers[i]);
           var resultType = web3.utils.asciiToHex(question.result_type);
 
-          var myContract = new web3.eth.Contract(election_abi, '{{election.contract_address}}', {
+          var myContract = new web3.eth.Contract(election_abi, electionContractAddress, {
                                 from: accounts[0],
                                 gasPrice: web3.utils.toHex(web3.utils.toWei('3', 'gwei'))
                             });
 
-          myContract.methods.addQuestion(question.question, answers, question.min, question.max, resultType)
-            .send({from: accounts[0]}, function(error, result){
-                    console.log(error);
-                    console.log(result);
-                }).on('receipt', function(receipt){
-                    console.log(receipt);
-                });
+          var buttonObject = $(this);
 
-          $(this).next().show();
-          $(this).hide();
+          myContract.methods.addQuestion(question.question, answers, question.min, question.max, resultType)
+            .send({from: accounts[0]})
+            .on('error', function(error, receipt) {
+
+              myContract.methods.questionNames(questionNo-1).call({from: accounts[0]})
+                .then((result) => {
+                  if(result == question.question)
+                  {
+                    alert('Question already registered');
+                    buttonObject.next().show();
+                    buttonObject.hide();
+                  }
+                  else
+                  {
+                    alert(error);
+                  }
+                });
+            }).on('receipt', function(receipt){
+                $.ajax({
+                      url:  '/helios/elections/{{election.uuid}}/ajax/question',
+                      type: 'POST',
+                      data: {
+                        'noQuestionRegistered': questionNo,
+                        'questionTransaction': receipt.transactionHash
+                      },
+                      dataType: 'json',
+                      success: function (data) {
+                        if (data.message) {
+
+                          noQuestionsAdded++;
+
+                          $("#question-" + questionNo + "-transaction").val(receipt.transactionHash);
+                          buttonObject.next().show();
+                          buttonObject.hide();
+
+                          console.log(receipt);
+                          $("#example-async").find(".error").removeClass("error");
+                        } else if(data.error) {
+                          alert("Question not registered");
+                          console.log(data.error);
+                        }
+                      },
+                      error: function(jqXHR, textStatus, errorThrown) {
+                        console.log("Error " + textStatus);
+                      }
+                });
+            });
         });
 
     });
     </script>
 
-    <script src="/static/wizard/js/wizard.js"></script>
+    <script>
+      var wizard = $("#example-async");
+
+      wizard.steps({
+          headerTag: "h3",
+          bodyTag: "section",
+          transitionEffect: "slide",
+          transitionEffectSpeed: 150,
+          labels: {
+              finish: 'Finish <i class="fa fa-chevron-right"></i>',
+              next: 'Next <i class="fa fa-chevron-right"></i>',
+              previous: '<i class="fa fa-chevron-left"></i> Previous'
+          },
+          onStepChanging: function (event, currentIndex, newIndex)
+          {
+              if(!contractDeployed)
+                  return false;
+
+              if(currentIndex === 1 && newIndex === 2 && noQuestionsAdded != {{ election.questions|length }})
+                  return false;
+
+              console.log("new");
+              return true;
+          },
+          onStepChanged: function (event, currentIndex, priorIndex)
+          {
+              console.log("changed");
+          },
+          onFinishing: function (event, currentIndex) {
+              console.log("finishing");
+              return true;
+          },
+          onFinished: function (event, currentIndex)
+          {
+              alert("Submitted!");
+          }
+      });
+    </script>
 
 <br /><br />
 {% endblock %}

@@ -42,7 +42,15 @@ from . import datatypes
 from . import forms
 from django.apps import apps
 
+#############################
+# ETHEREUM                  #
+#############################
+
+from web3 import Web3, HTTPProvider
+w3 = Web3(HTTPProvider('http://127.0.0.1:8545'))
+
 Election = apps.get_model('helios', 'Election')
+QuestionBlockchain = apps.get_model('helios', 'QuestionBlockchain')
 Voter = apps.get_model('helios', 'Voter')
 CastVote = apps.get_model('helios', 'CastVote')
 VoterFile = apps.get_model('helios', 'VoterFile')
@@ -1070,19 +1078,54 @@ def one_election_save_questions(request, election):
 def deployed_contract(request, election):
 
   if request.is_ajax and request.method == "POST":
-    election.deploy_transaction = request.POST['transactionHash']
-    election.contract_address = request.POST['contractAddress']
-    election.owner_address = request.POST['ownerAddress']
-    election.save()
+    try:
+      valid_address = w3.toChecksumAddress(request.POST['contractAddress'])
+      gas_estimate = settings.HELIOS_ADMINISTRATOR_CONTRACT_INSTANCE.functions.createElection(valid_address).estimateGas()
+      if gas_estimate < 500000:
+        tx_hash = settings.HELIOS_ADMINISTRATOR_CONTRACT_INSTANCE.functions.createElection(valid_address).transact()
+        receipt = w3.eth.waitForTransactionReceipt(tx_hash)
+        print("Transaction receipt mined: \n")
+        print(dict(receipt))
 
-    return JsonResponse({'message' : "Your election's contract is registered"}, status=200)
+        election.deploy_transaction = request.POST['transactionHash']
+        election.contract_address = request.POST['contractAddress']
+        election.owner_address = request.POST['ownerAddress']
+        election.save()
+        return JsonResponse({'message': "Your election's contract is registered"}, status=200)
+      else:
+        raise Exception('Gas estimated for registration of your election contract is too much')
+    except Exception as ex:
+      template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+      message = template.format(type(ex).__name__, ex.args)
+      return JsonResponse({'error': message}, status=500)
   else:
-    return JsonResponse({'message' : "URL available only for POST request"}, status = 404)
+    return JsonResponse({'error': "URL available only for POST request"}, status=404)
     
+@election_admin(frozen=False)
+def question_registered_to_contract(request, election):
+
+  if request.is_ajax and request.method == "POST":
+    if int(request.POST['noQuestionRegistered']) < len(election.questions) + 1:
+
+      QuestionBlockchain.objects.create(
+        no_question = request.POST['noQuestionRegistered'],
+        transaction_hash = request.POST['questionTransaction'],
+        election = election
+      )
+
+      election.no_questions_added_to_contract = election.no_questions_added_to_contract + 1
+      election.save()
+
+      return JsonResponse({'message': "Your question is valid and registered to server"}, status=200)
+    else:
+      return JsonResponse({'error': "Question number is bigger than maximum allowed"}, status=500)
+  else:
+    return JsonResponse({'error': "URL available only for POST request"}, status=404)
 
 @election_admin(frozen=False)
 def one_election_deploy_contract(request, election):
   issues = election.issues_deploy_contract
+  questions_blockchain = list(QuestionBlockchain.objects.all().filter(election = election).values())
 
   try:
     import json
@@ -1099,6 +1142,7 @@ def one_election_deploy_contract(request, election):
                                                                  'election_contract_bytecode': election_contract_bytecode,
                                                                  'election_contract_abi': election_contract_abi_json,
                                                                  'questions': json.dumps(election.questions),
+                                                                 'questions_blockchain': json.dumps(questions_blockchain),
                                                                  'issues_p' : len(issues) > 0})
   else:
 

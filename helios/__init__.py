@@ -2,7 +2,6 @@ from django.conf import settings
 from django.urls import reverse
 import os
 
-
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings')
 
 TEMPLATE_BASE = settings.HELIOS_TEMPLATE_BASE or "helios/templates/base.html"
@@ -21,3 +20,6 @@ VOTERS_EMAIL = settings.HELIOS_VOTERS_EMAIL
 from .celery import app as celery_app
 
 __all__ = ('celery_app',)
+
+# if settings.HELIOS_ADMINISTRATOR_CONTRACT_INSTANCE is None:
+#   settings.DEPLOY_ADMINISTRATOR_CONTRACT()

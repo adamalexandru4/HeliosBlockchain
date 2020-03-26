@@ -12,11 +12,11 @@ contract HeliosElection {
     }
 
     struct Question {
-        string name;
         int min;
         int max;
         bytes32[] answers;
         bytes32 resultType;
+        bool registered;
     }
 
     string name;
@@ -25,7 +25,9 @@ contract HeliosElection {
 
     address owner;
 
-    Question[] questions;
+    mapping(string => Question) questions;
+    string[] public questionNames;
+
     string[] trusteesPubKeys;
     mapping(address => bool) eligibleVoters;
     mapping(address => Vote) public votes;
@@ -61,14 +63,22 @@ contract HeliosElection {
         return eligibleVoters[_voterAddress];
     }
 
+    function getNoQuestions() public returns(uint) {
+        return questionNames.length;
+    }
+
     function addQuestion(string memory _name, bytes32[] memory _answers, int _min, int _max, bytes32 _type) public onlyOwner {
+        require(questions[_name].registered == false, "Question already registered");
+
         Question memory newQuestion;
-        newQuestion.name = _name;
         newQuestion.min = _min;
         newQuestion.max = _max;
         newQuestion.resultType = _type;
         newQuestion.answers = _answers;
-        questions.push(newQuestion);
+        newQuestion.registered = true;
+        questions[_name] = newQuestion;
+
+        questionNames.push(_name);
     }
 
     function addTrusteeKeys(string[] memory _trusteePubKeys) public onlyOwner {
