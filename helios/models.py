@@ -43,6 +43,7 @@ class Election(HeliosModel):
   # Ethereum smart contract address deployed
   contract_address = models.CharField(max_length = 100, null = True)
   owner_address = models.CharField(max_length = 100, null = True)
+  deploy_transaction = models.CharField(max_length = 100, null = True)
   questions_added_to_contract = models.IntegerField(default = 0, null = False)
   election_pubkey_added_to_contract = models.BooleanField(default = False, null = False)
   voters_added_to_contract = models.IntegerField(default = 0, null = False)
@@ -537,15 +538,21 @@ class Election(HeliosModel):
 
     self.eligibility = [{'auth_system': auth_system} for auth_system in auth_systems]
     self.save()    
-    
+
+  def deploy_complete(self):
+    """
+    the smart contract is deployed and full of election's info
+    """
+    self.frozen_at = datetime.datetime.utcnow()
+    self.save()
+
+
   def freeze(self):
     """
     election is frozen when the voter registration, questions, and trustees are finalized
     """
     if len(self.issues_before_freeze) > 0:
       raise Exception("cannot freeze an election that has issues")
-
-    self.frozen_at = datetime.datetime.utcnow()
     
     # voters hash
     self.generate_voters_hash()

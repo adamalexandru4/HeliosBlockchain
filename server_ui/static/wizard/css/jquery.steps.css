@@ -163,8 +163,7 @@
 .wizard > .content > .body
 {
     float: left;
-    position: absolute;
-    width: 95%;
+    position: relative !important;
     height: 95%;
     padding: 2.5%;
 }
@@ -174,10 +173,12 @@
     list-style: disc !important;
 }
 
+/*
 .wizard > .content > .body ul > li
 {
     display: list-item;
 }
+*/
 
 .wizard > .content > .body > iframe
 {

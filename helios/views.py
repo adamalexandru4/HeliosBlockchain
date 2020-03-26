@@ -8,7 +8,7 @@ Ben Adida (ben@adida.net)
 from django.urls import reverse
 from django.core.paginator import Paginator
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse, Http404, HttpResponseRedirect, HttpResponseForbidden
+from django.http import HttpResponse, Http404, HttpResponseRedirect, HttpResponseForbidden, JsonResponse
 from django.db import transaction, IntegrityError
 
 from validate_email import validate_email
@@ -1066,7 +1066,21 @@ def one_election_save_questions(request, election):
   else:
     return FAILURE
 
-@election_admin(frozen=True)
+@election_admin(frozen=False)
+def deployed_contract(request, election):
+
+  if request.is_ajax and request.method == "POST":
+    election.deploy_transaction = request.POST['transactionHash']
+    election.contract_address = request.POST['contractAddress']
+    election.owner_address = request.POST['ownerAddress']
+    election.save()
+
+    return JsonResponse({'message' : "Your election's contract is registered"}, status=200)
+  else:
+    return JsonResponse({'message' : "URL available only for POST request"}, status = 404)
+    
+
+@election_admin(frozen=False)
 def one_election_deploy_contract(request, election):
   issues = election.issues_deploy_contract
 
@@ -1081,8 +1095,10 @@ def one_election_deploy_contract(request, election):
   if request.method == "GET":
     return render_template(request, 'election_deploy_contract', {'election': election,
                                                                  'issues' : issues,
+                                                                 'contract_already_deployed': 'true' if election.contract_address else 'false',
                                                                  'election_contract_bytecode': election_contract_bytecode,
                                                                  'election_contract_abi': election_contract_abi_json,
+                                                                 'questions': json.dumps(election.questions),
                                                                  'issues_p' : len(issues) > 0})
   else:
 

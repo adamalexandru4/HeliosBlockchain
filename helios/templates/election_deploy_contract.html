@@ -36,29 +36,32 @@ Registration for your election is currently <b>closed</b>, which means only the 
         <p class="pl-5 pt-1">Vote ends at</p>
       </div>
       <div class="col">
-        <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="staticEmail" value="{{election.name}}">
-        <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="staticEmail" value="{{election.url}}">
-        <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="staticEmail" value="ETH ADDRESS">
-        <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="staticEmail" value="{{election.created_at}}">
-        <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="staticEmail" value="{{election.voting_starts_at}}">
-        <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="staticEmail" value="{{election.voting_ends_at}}">
+        <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="election-name" value="{{election.name}}">
+        <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="election-url" value="{{election.cast_url}}">
+        <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="owner-address" value="Please connect with MetaMask account">
+        <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="created-at" value="{{election.created_at}}">
+        <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="starts-at" value="{{election.voting_starts_at}}">
+        <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="ends-at" value="{{election.voting_ends_at}}">
       </div>
     </div>
-      <div class="row justify-content-center" id="before-deploy-button">
+    <div class="row justify-content-center" id="before-deploy-button">
         <button class="btn btn-warning">DEPLOY</button>
       </div>
     <div class="container pt-5" id="after-deploy" style="display: none;">
       <div class="row justify-content-center pb-3">
         <i class="fas fa-check-circle fa-5x" style="color: green;"></i>
       </div>
+      <div class="row justify-content-center">
+        <p class="font-weight-light">Save them for individual verifiability</p>
+      </div>
       <div class="row">
         <div class="col">
           <div class="row">
-            <span class="fas fa-file-contract pr-2 pt-1 fa-2x"></span>
-            <p class="font-weight-bold pt-2">Smart contract address</p>
+            <span class="fas fa-file-contract pr-2 pt-1 fa-2x" style="padding-left: 4em;"></span>
+            <p class="font-weight-bold pt-2 pl-1">Smart contract address</p>
           </div>
           <div class="row">
-            <span class="fas fa-hashtag pr-2 pt-1 fa-2x"></span>
+            <span class="fas fa-hashtag pr-2 pt-1 fa-2x" style="padding-left: 4em;"></span>
             <p class="font-weight-bold pt-2">Transaction hash</p>
           </div>
         </div>
@@ -70,11 +73,33 @@ Registration for your election is currently <b>closed</b>, which means only the 
     </div>
   </section>
   <h3>Add questions</h3>
-  <section>
-      <p>Morbi ornare tellus at elit ultrices id dignissim lorem elementum. Sed eget nisl at justo condimentum dapibus. Fusce eros justo, 
-          pellentesque non euismod ac, rutrum sed quam. Ut non mi tortor. Vestibulum eleifend varius ullamcorper. Aliquam erat volutpat. 
-          Donec diam massa, porta vel dictum sit amet, iaculis ac massa. Sed elementum dui commodo lectus sollicitudin in auctor mauris 
-          venenatis.</p>
+  <section class="container">
+    <div class="row justify-content-center" id="questions">
+      {% for question in election.questions %}
+      <div class="col-4">
+        <div class="card bg-light mb-3">
+          <div class="card-header font-weight-bold">Question {{forloop.counter}}</div>
+          <div class="card-body">
+            <p class="card-text text-center">{{question.question}}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="card bg-light mb-3">
+          <div class="card-header font-weight-bold">Answers</div>
+          <ul class="list-group list-group-flush" style="padding: 0 1.25rem;">
+            {% for answer in question.answers %}
+            <li class="list-group-item text-center pt-1 pb-1" style="background: rgba(0,0,0,0);">{{answer}}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      <div class="col-4 align-self-center text-center">
+        <button type="button" id="add-question-{{forloop.counter}}" class="btn btn-warning add-question-button" style="display: inline;">Add question</button>
+        <div class="alert alert-success question-added" id="question-{{forloop.counter}}-added" role="alert" style="display: none;">Question added</div>
+      </div>
+      {% endfor %}
+    </div>
   </section>
   <h3>Add eligible voters</h3>
   <section>
@@ -91,51 +116,132 @@ Registration for your election is currently <b>closed</b>, which means only the 
 </div>
 
     <script>
-
     var contractDeployed = false;
+    var nextButton, buttonEnabled;
+
+    const election_abi = JSON.parse(" {{ election_contract_abi|escapejs }}" );
+    const election_bytecode = "{{ election_contract_bytecode }}";
+
+    var electionContract;
+    var questions = {{ questions | safe }};
 
     var created_date_uint = new Date('{{election.created_at|date:"D, d M Y H:i:s"}}').getTime();
 
-    $(document).ready(function() {
+    $(document).ready(async function() {
+
+        if({{ contract_already_deployed }}) {
+          nextButton = $(".actions ul li:nth-child(2) a");
+          buttonEnabled = $(".actions ul li:nth-child(2)").removeClass("disabled").attr("aria-disabled", "false");
+
+          $("#before-deploy").hide();
+          $("#before-deploy-button").hide();
+          $("#after-deploy").show();
+          $("#smart-contract-address").val("{{election.contract_address}}");
+          $("#transaction-hash").val("{{election.deploy_transaction}}");
+          contractDeployed = true;
+        } else {
+            nextButton = $(".actions ul li:nth-child(2) a");
+            buttonEnabled = $(".actions ul li:nth-child(2)").addClass("disabled").attr("aria-disabled", "true");
+        }
+
+        var accounts;
+        if (window.ethereum) {
+          window.web3 = new Web3(ethereum);
+          try {
+              // Request access to the metamask account
+              accounts = await ethereum.enable();
+              $("#owner-address").val(accounts[0]);
+           } catch(error) {
+              console.log(error);
+           }
+        }
+
         $( "#before-deploy-button" ).click(async function() {
-            election_abi = JSON.parse(" {{ election_contract_abi|escapejs }}" );
-            election_bytecode = "{{ election_contract_bytecode }}";
 
-            if (window.ethereum) {
-                window.web3 = new Web3(ethereum);
-                try {
-                    // Request access to the metamask account
-                    const accounts = await ethereum.enable();
+            try {
+              let payload = {
+                  data: election_bytecode,
+                  arguments: ["{{election.name}}", web3.utils.asciiToHex("{{election.short_name}}"), created_date_uint, created_date_uint, created_date_uint]
+              }
+              electionContract = new web3.eth.Contract(election_abi);
+              const estimatedGas = await electionContract.deploy(payload).estimateGas();
 
-                    let payload = {
-                        data: election_bytecode,
-                        arguments: ["{{election.name}}", web3.utils.asciiToHex("{{election.short_name}}"), created_date_uint, created_date_uint, created_date_uint]
+              let parameter = {
+                  from: accounts[0],
+                  gas: web3.utils.toHex(3000000),
+                  gasPrice: web3.utils.toHex(web3.utils.toWei('3', 'gwei'))
+              }
+
+              var transactionHashFinal, contractAddress;
+
+              electionContract.deploy(payload).send(parameter, (err, transactionHash) => {
+                  console.log('Transaction Hash :', transactionHash);
+                  transactionHashFinal = transactionHash;
+                  $("#transaction-hash").val(transactionHash);
+              }).on('confirmation', () => {}).then((newContractInstance) => {
+                  console.log('Deployed Contract Address : ', newContractInstance.options.address);
+                  $.ajax({
+                    url:  '/helios/elections/{{election.uuid}}/ajax/contract',
+                    type: 'POST',
+                    data: {
+                      'transactionHash': transactionHashFinal,
+                      'contractAddress': newContractInstance.options.address,
+                      'ownerAddress': accounts[0]
+                    },
+                    dataType: 'json',
+                    success: function (data) {
+                      if (data.message) {
+                        alert(data.message);
+                      } else {
+                        alert("Data not received");
+                      }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                      console.log("Error");
                     }
-                    var electionContract = new web3.eth.Contract(election_abi);
-                    const estimatedGas = await electionContract.deploy(payload).estimateGas();
+                  });
 
-                    let parameter = {
-                        from: accounts[0],
-                        gas: web3.utils.toHex(3000000),
-                        gasPrice: web3.utils.toHex(web3.utils.toWei('3', 'gwei'))
-                    }
+                  var nextButton = $(".actions ul li:nth-child(2) a");
+                  buttonEnabled = $(".actions ul li:nth-child(2)").removeClass("disabled").attr("aria-disabled", "false");
 
-                    electionContract.deploy(payload).send(parameter, (err, transactionHash) => {
-                        console.log('Transaction Hash :', transactionHash);
-                        $("#transaction-hash").val(transactionHash);
-                    }).on('confirmation', () => {}).then((newContractInstance) => {
-                        console.log('Deployed Contract Address : ', newContractInstance.options.address);
-                        $("#before-deploy").hide();
-                        $("#before-deploy-button").hide();
-                        $("#after-deploy").show();
-                        $("#smart-contract-address").val(newContractInstance.options.address);
-                    })
+                  $("#before-deploy").hide();
+                  $("#before-deploy-button").hide();
+                  $("#after-deploy").show();
+                  $("#smart-contract-address").val(newContractInstance.options.address);
+                  contractDeployed = true;
 
-
-                } catch (error) {
-                    console.log(error);
-                }
+                  $("#example-async").find(".error").removeClass("error");
+              });
+            } catch (error) {
+                console.log(error);
             }
+        });
+
+        $( ".add-question-button" ).click(async function() {
+          var questionNo = $(this).attr('id').substring($(this).attr('id').length - 1, $(this).attr('id').length);
+          console.log(questions[questionNo - 1]);
+
+          var question = questions[questionNo - 1];
+          var answers = question.answers;
+          for(var i = 0; i < answers.length; i ++)
+            answers[i] = web3.utils.asciiToHex(answers[i]);
+          var resultType = web3.utils.asciiToHex(question.result_type);
+
+          var myContract = new web3.eth.Contract(election_abi, '{{election.contract_address}}', {
+                                from: accounts[0],
+                                gasPrice: web3.utils.toHex(web3.utils.toWei('3', 'gwei'))
+                            });
+
+          myContract.methods.addQuestion(question.question, answers, question.min, question.max, resultType)
+            .send({from: accounts[0]}, function(error, result){
+                    console.log(error);
+                    console.log(result);
+                }).on('receipt', function(receipt){
+                    console.log(receipt);
+                });
+
+          $(this).next().show();
+          $(this).hide();
         });
 
     });
@@ -147,7 +253,6 @@ Registration for your election is currently <b>closed</b>, which means only the 
 {% endblock %}
 
 {% block end-js %}
-<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
 {% endblock %}

@@ -22,7 +22,10 @@ urlpatterns = [
     re_path(r'^archive$', one_election_archive, name='one-election-archive'),
     re_path(r'^copy$', one_election_copy, name='one-election-copy'),
     re_path(r'^freeze', one_election_freeze, name='one-election-freeze'),
+    
+    # deploy smart contract
     re_path(r'^deploy', one_election_deploy_contract, name='one-election-deploy-contract'),
+    re_path(r'^ajax/contract$', deployed_contract, name='deployed-contract'),
 
     # badge
     re_path(r'^badge$', election_badge, name='election-badge'),

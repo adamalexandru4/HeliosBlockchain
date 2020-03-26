@@ -13,7 +13,10 @@ contract HeliosElection {
 
     struct Question {
         string name;
+        int min;
+        int max;
         bytes32[] answers;
+        bytes32 resultType;
     }
 
     string name;
@@ -58,9 +61,12 @@ contract HeliosElection {
         return eligibleVoters[_voterAddress];
     }
 
-    function addQuestion(string memory _name, bytes32[] memory _answers) public onlyOwner {
+    function addQuestion(string memory _name, bytes32[] memory _answers, int _min, int _max, bytes32 _type) public onlyOwner {
         Question memory newQuestion;
         newQuestion.name = _name;
+        newQuestion.min = _min;
+        newQuestion.max = _max;
+        newQuestion.resultType = _type;
         newQuestion.answers = _answers;
         questions.push(newQuestion);
     }

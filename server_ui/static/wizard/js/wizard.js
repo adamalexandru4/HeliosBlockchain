@@ -6,7 +6,7 @@ wizard.steps({
     headerTag: "h3",
     bodyTag: "section",
     transitionEffect: "slide",
-    transitionEffectSpeed: 50,
+    transitionEffectSpeed: 150,
     labels: {
         finish: 'Finish <i class="fa fa-chevron-right"></i>',
         next: 'Next <i class="fa fa-chevron-right"></i>',
@@ -14,11 +14,8 @@ wizard.steps({
     },
     onStepChanging: function (event, currentIndex, newIndex)
     {
-        if(newIndex === 0 || currentIndex === 1) {
-            $("#before-deploy").hide();
-            $("#before-deploy-button").hide();
-            $("#after-deploy").show();
-        }
+        if(!contractDeployed)
+            return false;
 
         console.log("new");
         return true;
