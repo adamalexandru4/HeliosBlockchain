@@ -106,23 +106,75 @@ Registration for your election is currently <b>closed</b>, which means only the 
     </div>
   </section>
   <h3>Add eligible voters</h3>
-  <section>
-      <p>Quisque at sem turpis, id sagittis diam. Suspendisse malesuada eros posuere mauris vehicula vulputate. Aliquam sed sem tortor. 
-          Quisque sed felis ut mauris feugiat iaculis nec ac lectus. Sed consequat vestibulum purus, imperdiet varius est pellentesque vitae. 
-          Suspendisse consequat cursus eros, vitae tempus enim euismod non. Nullam ut commodo tortor.</p>
+  <section style="float: unset;">
+     <div class="container">
+      {% if election.openreg and election.eligibility %}
+      <div class="pt-5" id="public-election-before">
+        <div class="row justify-content-center pb-3">
+          <i class="fas fa-users fa-5x" style="color: #2184be;"></i>
+        </div>
+        <div class="row justify-content-center">
+          <p>Election is <span class="font-weight-bold"> PUBLIC</span></p>
+        </div>
+        <div class="row justify-content-center">
+          <p class="text-muted font-italic">Everyone can vote in this election</p>
+        </div>
+      </div>
+      {% else %}
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">First</th>
+            <th scope="col">Last</th>
+            <th scope="col">Handle</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">1</th>
+            <td>Mark</td>
+            <td>Otto</td>
+            <td>@mdo</td>
+        </tbody>
+      </table>
+      {% endif %}
+     
+     </div>
   </section>
   <h3>Add election public key</h3>
-  <section>
-    <p>Quisque at sem turpis, id sagittis diam. Suspendisse malesuada eros posuere mauris vehicula vulputate. Aliquam sed sem tortor. 
-        Quisque sed felis ut mauris feugiat iaculis nec ac lectus. Sed consequat vestibulum purus, imperdiet varius est pellentesque vitae. 
-        Suspendisse consequat cursus eros, vitae tempus enim euismod non. Nullam ut commodo tortor.</p>
+  <section class="container">
+    <div class="row justify-content-center pt-5 pb-3">
+      <i class="fas fa-key fa-5x" style="color: #2184be;"></i>
+    </div>
+    <div class="row justify-content-center">
+     <p><span class="font-weight-bold"> HASH OF PUBLIC KEY </span> for ballot encryption</p>
+    </div>
+    <div class="row justify-content-center">
+      <input type="text" readonly="" class="form-control-plaintext col-sm-7" id="pub-key" value="{{ election.election_pubkey_hash }}">
+    </div>
+    <div class="row text-center justify-content-center">
+      <button class="btn btn-warning" id="set-public-key">SET ON CONTRACT</button>
+      <div class="alert alert-success col-sm-7" id="public-key-setted" role="alert" style="display: none; padding: .75rem 1rem;">
+          Public key set transaction
+          <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="pub-key-transaction" value="{{ election.election_pubkey_transaction }}">
+        </div>
+    </div>
   </section>
 </div>
 
 
     <script>
+  
     var contractDeployed = false;
     var noQuestionsAdded = {{ election.no_questions_added_to_contract }};
+    {% if election.openreg and election.eligibility %}
+      var publicElection = true;
+    {% else %}
+      var publicElection = false;
+    {% endif %}
+    var electionVotersAdded = false;
+
     var nextButton, buttonEnabled;
 
     const election_abi = JSON.parse(" {{ election_contract_abi|escapejs }}" );
@@ -177,6 +229,15 @@ Registration for your election is currently <b>closed</b>, which means only the 
                 $("#question-" + (i + 1) + "-added").show();
                 $("#question-" + (i + 1) + "-transaction").val(questions_blockchain[i].transaction_hash);
               }
+            });
+
+           electionContract.methods.pubKey().call({ from: accounts[0]})
+            .then((result) => {
+                console.log(result);
+<!--                $("#pub-key-input").val(result);-->
+                $("#set-public-key").hide();
+                $("#public-key-setted").show();
+
             });
         } else {
             nextButton = $(".actions ul li:nth-child(2) a");
@@ -242,6 +303,49 @@ Registration for your election is currently <b>closed</b>, which means only the 
             } catch (error) {
                 console.log(error);
             }
+        });
+
+        $("#set-public-key").click(async function() {
+          var hashPublicKey = $("#pub-key").val();
+
+          if(hashPublicKey.length != 64) {
+            alert('Public key from server is wrong!');
+            $("#pub-key").val("WRONG VALUE FROM SERVER!");
+            return;
+          }
+
+          var myContract = new web3.eth.Contract(election_abi, electionContractAddress, {
+                                from: accounts[0],
+                                gasPrice: web3.utils.toHex(web3.utils.toWei('3', 'gwei'))
+                            });
+
+          myContract.methods.setPublicKey('0x' + hashPublicKey)
+            .send({from: accounts[0]})
+            .on('error', function(error, receipt) {
+                alert('Setting public key failed, try again.');
+             }).on('receipt', function(receipt){
+                $.ajax({
+                      url:  '/helios/elections/{{election.uuid}}/ajax/pubkey',
+                      type: 'POST',
+                      data: {
+                        'pubKeyTransaction': receipt.transactionHash,
+                        'pubKeyHash': hashPublicKey
+                      },
+                      dataType: 'json',
+                      success: function (data) {
+                        if (data.message) {
+                          console.log(data.message);
+                        } else if(data.error) {
+                          alert("Transaction hash not registered");
+                          console.log(data.error);
+                        }
+                      },
+                      error: function(jqXHR, textStatus, errorThrown) {
+                        console.log("Error " + textStatus);
+                      }
+                });
+             });
+
         });
 
         $( ".add-question-button" ).click(async function() {
@@ -334,6 +438,12 @@ Registration for your election is currently <b>closed</b>, which means only the 
               if(currentIndex === 1 && newIndex === 2 && noQuestionsAdded != {{ election.questions|length }})
                   return false;
 
+              if(currentIndex === 2 && newIndex === 3)
+                if(publicElection)
+                  return true;
+                else if(electionVotersAdded == false)
+                      return false;
+
               console.log("new");
               return true;
           },
@@ -343,11 +453,11 @@ Registration for your election is currently <b>closed</b>, which means only the 
           },
           onFinishing: function (event, currentIndex) {
               console.log("finishing");
-              return true;
+              return false;
           },
           onFinished: function (event, currentIndex)
           {
-              alert("Submitted!");
+              console("Submitted!");
           }
       });
     </script>

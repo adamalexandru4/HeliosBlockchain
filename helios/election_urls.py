@@ -27,7 +27,7 @@ urlpatterns = [
     re_path(r'^deploy', one_election_deploy_contract, name='one-election-deploy-contract'),
     re_path(r'^ajax/contract$', deployed_contract, name='deployed-contract'),
     re_path(r'^ajax/question$', question_registered_to_contract, name='question-registered-to-contract'),
-
+    re_path(r'^ajax/pubkey', set_pubkey_transaction_contract, name='set-pubkey-transaction-contract'),
 
     # badge
     re_path(r'^badge$', election_badge, name='election-badge'),

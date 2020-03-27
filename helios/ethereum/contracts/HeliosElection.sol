@@ -5,6 +5,7 @@ contract HeliosElection {
 
     struct Vote {
         string hash;
+        address voterAddr;
 
         bool valid; // PROOF is VALID or NOT
         uint castAt;
@@ -19,29 +20,31 @@ contract HeliosElection {
         bool registered;
     }
 
-    string name;
-    bytes32 short_name; // for URL
-    string pubKey;
+    string public name;
+    bytes32 public short_name; // for URL
+    bytes32 public pubKey;
 
     address owner;
 
     mapping(string => Question) questions;
     string[] public questionNames;
 
-    string[] trusteesPubKeys;
     mapping(address => bool) eligibleVoters;
     mapping(address => Vote) public votes;
     address[] votersWhoVoted;
 
-    uint createdAt;
-    uint startAt;
-    uint endAt;
+    bool public isElectionPublic;
+    uint public createdAt;
+    uint public startAt;
+    uint public endAt;
 
     constructor(string memory _name, bytes32 _short_name,
                 uint _createdAt, uint _startAt, uint _endAt) public {
         owner = msg.sender;
         name = _name;
         short_name = _short_name;
+
+        isElectionPublic = false;
 
         createdAt = _createdAt;
         startAt = _startAt;
@@ -63,7 +66,7 @@ contract HeliosElection {
         return eligibleVoters[_voterAddress];
     }
 
-    function getNoQuestions() public returns(uint) {
+    function getNoQuestions() public view returns(uint) {
         return questionNames.length;
     }
 
@@ -81,14 +84,16 @@ contract HeliosElection {
         questionNames.push(_name);
     }
 
-    function addTrusteeKeys(string[] memory _trusteePubKeys) public onlyOwner {
-        trusteesPubKeys = _trusteePubKeys;
+    function setPublicKey(bytes32 _pubKey) public onlyOwner {
+        pubKey = _pubKey;
     }
 
     function vote(string memory _hash, uint _castAt) public {
-        require(eligibleVoters[msg.sender] == true, "You are not eligible to vote");
+        if(!isElectionPublic)
+            require(eligibleVoters[msg.sender] == true, "You are not eligible to vote");
 
         Vote memory newVote;
+        newVote.voterAddr = msg.sender;
         newVote.hash = _hash;
         newVote.castAt = _castAt;
         newVote.valid = false;
@@ -100,7 +105,13 @@ contract HeliosElection {
         require(keccak256(abi.encode(votes[_voter].hash)) == keccak256(abi.encode(_hash)), "Hash not matching");
         require(votes[_voter].castAt < _verifiedAt, "Don't fraud vote!");
 
-        votersWhoVoted.push(_voter);
+        if(votes[_voter].castAt > 0) {
+            require(votes[_voter].voterAddr == _voter);
+        }
+        else
+            votersWhoVoted.push(_voter);
+
+
         votes[_voter].valid = true;
         votes[_voter].verifiedAt = _verifiedAt;
     }

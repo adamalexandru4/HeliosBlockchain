@@ -1123,6 +1123,21 @@ def question_registered_to_contract(request, election):
     return JsonResponse({'error': "URL available only for POST request"}, status=404)
 
 @election_admin(frozen=False)
+def set_pubkey_transaction_contract(request, election):
+
+  if request.is_ajax and request.method == "POST":
+    if not election.election_pubkey_transaction and election.election_pubkey_hash == request.POST['pubKeyHash']:
+
+      election.election_pubkey_transaction = request.POST['pubKeyTransaction']
+      election.save()
+
+      return JsonResponse({'message': "Your pubkey transaction is valid and saved on server"}, status=200)
+    else:
+      return JsonResponse({'error': "Election transaction already setted"}, status=500)
+  else:
+    return JsonResponse({'error': "URL available only for POST request"}, status=404)
+
+@election_admin(frozen=False)
 def one_election_deploy_contract(request, election):
   issues = election.issues_deploy_contract
   questions_blockchain = list(QuestionBlockchain.objects.all().filter(election = election).values())
@@ -1136,6 +1151,52 @@ def one_election_deploy_contract(request, election):
     return HttpResponseForbidden('Election contract not compiled')
 
   if request.method == "GET":
+
+    if not election.election_pubkey_hash:
+      import hashlib
+      election.election_pubkey_hash = hashlib.sha256(json.dumps({
+        'g': election.public_key.g,
+        'p': election.public_key.p,
+        'q': election.public_key.q,
+        'y': election.public_key.y
+      }).encode('utf8')).hexdigest()
+      election.save()
+
+    if not election.openreg:
+      # PAGINATION FOR VOTERS
+      page = int(request.GET.get('page', 1))
+      limit = 15
+      
+      order_by = 'user__user_id'
+
+      # unless it's by alias, in which case we better go by UUID
+      if election.use_voter_aliases:
+        order_by = 'alias'
+
+      # load a bunch of voters
+      # voters = Voter.get_by_election(election, order_by=order_by)
+      voters = Voter.objects.filter(election = election).order_by(order_by).defer('vote')
+
+      voter_paginator = Paginator(voters, limit)
+      voters_page = voter_paginator.page(page)
+
+      total_voters = voter_paginator.count
+
+      return render_template(request, 'election_deploy_contract', 
+                        {'election': election, 
+                        'issues' : issues,
+                        'contract_already_deployed': 'true' if election.contract_address else 'false',
+                        'election_contract_bytecode': election_contract_bytecode,
+                        'election_contract_abi': election_contract_abi_json,
+                        'questions': json.dumps(election.questions),
+                        'questions_blockchain': json.dumps(questions_blockchain),
+                        'issues_p' : len(issues) > 0,
+
+                        'voters_page': voters_page,
+                        'voters': voters_page.object_list,
+                        'total_voters': total_voters})
+
+
     return render_template(request, 'election_deploy_contract', {'election': election,
                                                                  'issues' : issues,
                                                                  'contract_already_deployed': 'true' if election.contract_address else 'false',

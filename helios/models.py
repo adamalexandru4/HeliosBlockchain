@@ -47,7 +47,8 @@ class Election(HeliosModel):
 
   no_questions_added_to_contract = models.IntegerField(default = 0, null = False)
 
-  election_pubkey_added_to_contract = models.BooleanField(default = False, null = False)
+  election_pubkey_hash = models.CharField(max_length=100, null = True)
+  election_pubkey_transaction = models.CharField(max_length=100, null = True)
   voters_added_to_contract = models.IntegerField(default = 0, null = False)
 
   # keep track of the type and version of election, which will help dispatch to the right
@@ -374,12 +375,6 @@ class Election(HeliosModel):
       issues.append({
         'type': 'owner contract',
         'action': 'there is no owner of smart contract'
-      })
-
-    if self.election_pubkey_added_to_contract == False:
-      issues.append({
-        'type': 'election pubkey',
-        'action': 'add election pubkey to smart contract'
       })
 
     if self.voters_added_to_contract != self.voter_set.count():
