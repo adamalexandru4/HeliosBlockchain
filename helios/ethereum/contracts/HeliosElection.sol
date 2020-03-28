@@ -44,7 +44,7 @@ contract HeliosElection {
         name = _name;
         short_name = _short_name;
 
-        isElectionPublic = false;
+        isElectionPublic = true;
 
         createdAt = _createdAt;
         startAt = _startAt;
