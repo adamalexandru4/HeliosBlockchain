@@ -1,27 +1,124 @@
 {% extends TEMPLATE_BASE %}
 {% block title %}Confirm Vote{% endblock %}
+{% block extra-head %}
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+<link href="/static/wizard/css/font-awesome-all.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+{% endblock %}
 
 {% block content %}
-<h1>{{election.name}} &mdash; Vote Successfully Cast!</h1>
+<div class="container">
+  <div class="jumbotron mt-4 pt-4">
+    <div class="text-center">
+      <h1 class="display-4">Vote successfully cast in </h1>
+      <h1> {{election.name}} election</h1>
+    </div>
+    <p class="lead">
+      <div class="row justify-content-center pb-3">
+        <i class="fas fa-check-circle fa-5x" style="color: green;"></i>
+      </div>
+      <center>
+      <p>
+        Your smart ballot tracker registered on server      
+      </p>
+      <div class="col-8">
+        <input class="form-control form-control-lg" style="background-color: white; font-size: 1.25rem; text-align: center;" type="text" value={{vote_hash}} readonly="">
+      </div>
 
-<p>
-    Congratulations, your vote has been <b><u>successfully cast</u></b>!
-</p>
-
-<p>
-  Your smart ballot tracker is:<br /><br />
-    <tt style="font-size:1.8em; font-weight: bold; padding-left: 20px;">  {{vote_hash}}</tt>
-</p>
-
-
-{% if logout %}
-<p><b>For your safety, we have logged you out.</b></p>
-<iframe width="0" height="0" border="0" frameborder="0" src="/auth/logout">
-</iframe>
-{% endif %}
-
-<p style="font-size: 1.4em;">
-[ <a href="{% url "one-election-view" election.uuid %}">return to election info</a> ]
-</p>
-
+    </center>
+    </p>
+    <hr class="my-4">
+      {% if logout %}
+      <div class="row justify-content-center">
+        <p><b>For your safety, we have logged you out.</b></p>
+        <iframe width="0" height="0" border="0" frameborder="0" src="/auth/logout">
+        </iframe>
+      </div>
+      {% endif %}
+    <div class="row justify-content-center pt-1">
+      <p class="font-weight-light">If the ballot tracker match your vote's hash, you can store it on <p class="font-weight-bold pl-1">ETHEREUM</p></p>
+      <br>
+      <p class="font-italic">Check that your MetaMask extension is connected to your account</p>
+      <div class="col-12 text-center">
+      <p class="font-weight-bold" style="color: red;">Tracker is converted to HEXADECIMAL value for reduced gas cost</p>
+      </div>
+      <div class="col-10">
+        <input class="form-control form-control-lg" style="background-color: white; font-size: 1.25rem; text-align: center;" type="text" value="0x{{vote_hash_hex}}" readonly="">
+      </div>
+    </div>
+    <div class="row justify-content-center" id="error-eth-cast" style="display: none;">
+      <p class="font-weight-bold" style="color: red" id="error-eth-cast-message"></p>
+    </div>
+    <div class="row" id="before-eth-cast">
+      <div class="col-6 text-right">
+        <a class="btn btn-danger" href="{{ go_vote_url }}" style="color: white;">Incorrect tracker</a>
+      </div>
+      <div class="col-6">
+        <button class="btn btn-info">Cast on blockchain</button>
+      </div>
+    </div>
+    <div id="succes-eth-cast" style="display: none;">
+      <div class="row justify-content-center">
+        <div class="col-4 text-center pt-1">
+          <div class="row">
+            <span class="fas fa-hashtag pr-2 pt-1" style="padding-left: 4em;"></span>
+            <p class="font-weight-bold">Transaction hash</p>
+          </div>
+        </div>
+        <div class="col-6">
+          <input class="form-control form-control-lg" id="succes-eth-cast-tx" value={{vote_hash}} style="background-color: white;text-align: center;" type="text" readonly="">
+        </div>
+      </div>
+      <div class="row justify-content-center">
+        <a class="btn btn-success" href="{% url "one-election-view" election.uuid %}">return to election info</a>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
+
+{% block end-js %}
+
+<script>
+  $(document).ready(async function() {
+  
+    var accounts;
+    if (window.ethereum) {
+      window.web3 = new Web3(ethereum);
+      try {
+          accounts = await ethereum.enable();
+      } catch(error) {
+          $("#before-eth-cast").hide();
+          $("#error-eth-cast").show();
+          $("#error-eth-cast-message").text("You should have MetaMask extension installed");
+      }
+    }
+    
+    const electionABI = JSON.parse(" {{ election_contract_abi|escapejs }}" );
+    const electionContractAddress = '{{election.contract_address}}';
+    const electionContract = new web3.eth.Contract(electionABI, electionContractAddress, {
+                                from: accounts[0],
+                                gasPrice: web3.utils.toHex(web3.utils.toWei('3', 'gwei'))
+                            }); 
+    var voteHashHEX = '0x' + '{{vote_hash_hex}}';
+    var now = new Date().getTime();
+  
+    electionContract.methods.vote(voteHashHEX, now)
+        .send({from: accounts[0]})
+        .on('error', function(error, receipt) {
+          $("#error-eth-cast").show();
+          $("#error-eth-cast-message").text("Transaction failed, check wallet");
+        }).on('receipt', function(receipt) {
+          $("#succes-eth-cast").show();
+          $("#succes-eth-cast-tx").val(receipt.transactionHash);
+          $("#before-eth-cast").hide();
+          $("#error-eth-cast").hide();
+          console.log(receipt);
+        })
+    
+  });
+  </script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+{% endblock %}
+

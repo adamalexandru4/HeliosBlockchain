@@ -234,7 +234,6 @@ Registration for your election is currently <b>closed</b>, which means only the 
            electionContract.methods.pubKey().call({ from: accounts[0]})
             .then((result) => {
                 console.log(result);
-<!--                $("#pub-key-input").val(result);-->
                 $("#set-public-key").hide();
                 $("#public-key-setted").show();
 
@@ -334,7 +333,8 @@ Registration for your election is currently <b>closed</b>, which means only the 
                       dataType: 'json',
                       success: function (data) {
                         if (data.message) {
-                          console.log(data.message);
+                          $("#set-public-key").hide();
+                          $("#public-key-setted").show();
                         } else if(data.error) {
                           alert("Transaction hash not registered");
                           console.log(data.error);
@@ -452,7 +452,13 @@ Registration for your election is currently <b>closed</b>, which means only the 
               console.log("changed");
           },
           onFinishing: function (event, currentIndex) {
-              console.log("finishing");
+              if(contractDeployed && noQuestionsAdded == {{ election.questions|length }} && publicElection) {
+                var form = $('<form action="{% url "one-election-final-freeze" election.uuid %}" method="post" style="display: none;"/>');
+                $('body').append(form);
+                form.submit();
+                return true;
+               }
+
               return false;
           },
           onFinished: function (event, currentIndex)

@@ -766,21 +766,6 @@ def one_election_cast_confirm(request, election):
       cast_vote_id = cast_vote.id,
       status_update_message = status_update_message)
 
-    # ipfs_vote_dict = {
-    #   'vote': encrypted_vote,
-    #   'vote_hash': cast_vote.vote_hash,
-    #   'vote_tinyhash': cast_vote.vote_tinyhash,
-    #   'cast_at': cast_vote.cast_at,
-    #   'cast_ip': cast_vote.cast_ip,
-    #   'quarantined_p': cast_vote.quarantined_p,
-    #   'released_from_quarantine_at': cast_vote.released_from_quarantine_at,
-    #   'verified_at': cast_vote.verified_at,
-    #   'invalidated_at': cast_vote.invalidated_at,
-    # }
-
-    # cast_vote.add_to_ipfs(ipfs_vote_dict, election.short_name)
-    # cast_vote.save()
-
     # remove the vote from the store
     del request.session['encrypted_vote']
     
@@ -795,6 +780,10 @@ def one_election_cast_done(request, election):
   """
   user = get_user(request)
   voter = get_voter(request, user, election)
+
+  import json
+  election_contract = settings.COMPILE_ELECTION_CONTRACT.get(settings.CONTRACTS_DIR + '/HeliosElection.sol:HeliosElection')
+  election_contract_abi_json = json.dumps(election_contract.get('abi'))
 
   if voter:
     votes = CastVote.get_by_voter(voter)
@@ -824,9 +813,15 @@ def one_election_cast_done(request, election):
   # if logout:
   #   auth_views.do_local_logout(request)
   
+  vote_hash_repadding = vote_hash
+  vote_hash_repadding += "=" * ((4 - len(vote_hash) % 4) % 4)
+
   # remote logout is happening asynchronously in an iframe to be modular given the logout mechanism
   # include_user is set to False if logout is happening
   return render_template(request, 'cast_done', {'election': election, 
+                                                'election_contract_abi': election_contract_abi_json,
+                                                'go_vote_url': get_election_govote_url(election),
+                                                'vote_hash_hex': base64.b64decode(vote_hash_repadding).hex(),
                                                 'vote_hash': vote_hash, 'logout': logout},
                          include_user=(not logout))
 
@@ -1211,6 +1206,18 @@ def one_election_deploy_contract(request, election):
       return HttpResponseRedirect(settings.SECURE_URL_HOST + reverse(one_election_view, args=[election.uuid]))
     else:
       return SUCCESS
+
+
+@transaction.atomic
+@election_admin(frozen=False)
+def one_election_final_freeze(request, election):
+
+  if request.method == "POST":
+    election.frozen_at = datetime.datetime.utcnow()
+    election.save()
+    return HttpResponseRedirect(settings.SECURE_URL_HOST + reverse(one_election_view, args=[election.uuid]))
+  if request.method == "GET":
+    return HttpResponseRedirect(settings.SECURE_URL_HOST + reverse(one_election_deploy_contract, args=[election.uuid]))
 
 
 @transaction.atomic

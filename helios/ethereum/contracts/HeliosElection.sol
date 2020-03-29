@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 contract HeliosElection {
 
     struct Vote {
-        string hash;
+        bytes32 hash;
         address voterAddr;
 
         bool valid; // PROOF is VALID or NOT
@@ -88,7 +88,7 @@ contract HeliosElection {
         pubKey = _pubKey;
     }
 
-    function vote(string memory _hash, uint _castAt) public {
+    function vote(bytes32 _hash, uint _castAt) public {
         if(!isElectionPublic)
             require(eligibleVoters[msg.sender] == true, "You are not eligible to vote");
 
