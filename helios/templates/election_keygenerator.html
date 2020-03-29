@@ -63,9 +63,9 @@ function setup_public_key_and_proof() {
     PROOF = SECRET_KEY.proveKnowledge(ElGamal.fiatshamir_dlog_challenge_generator);
     PUBLIC_KEY = SECRET_KEY.pk;
 
-    var pk_val = jQuery.toJSON({'pok': PROOF, 'public_key': PUBLIC_KEY});
+    var pk_val = JSON.stringify({'pok': PROOF.toJSONObject(), 'public_key': PUBLIC_KEY.toJSONObject()});
     $('#pk_textarea').val(pk_val);
-    $('#pk_hash').html(b64_sha256(jQuery.toJSON(PUBLIC_KEY)));
+    $('#pk_hash').html(b64_sha256(JSON.stringify(PUBLIC_KEY.toJSONObject())));
 
     $('#clear_button').show();
     show_sk();
@@ -77,12 +77,12 @@ function show_sk() {
 
 function download_sk() {
     $('#pk_content').show();
-    $('#sk_content').html(jQuery.toJSON(SECRET_KEY));
+    $('#sk_content').html(JSON.stringify(SECRET_KEY.toJSONObject()));
 }
 
 function download_sk_to_file(filename) {
     var element = document.createElement('a');
-    element.setAttribute('href','data:text/plain;charset=utf-8,'+ encodeURIComponent(jQuery.toJSON(SECRET_KEY)));
+    element.setAttribute('href','data:text/plain;charset=utf-8,'+ encodeURIComponent(JSON.stringify(SECRET_KEY.toJSONObject())));
     element.setAttribute('download', filename);
     element.style.display = 'none';
     document.body.appendChild(element);

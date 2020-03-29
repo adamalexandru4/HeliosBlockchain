@@ -108,13 +108,40 @@
         .on('error', function(error, receipt) {
           $("#error-eth-cast").show();
           $("#error-eth-cast-message").text("Transaction failed, check wallet");
-        }).on('receipt', function(receipt) {
+        }).on('transactionHash', function(hash) {
           $("#succes-eth-cast").show();
-          $("#succes-eth-cast-tx").val(receipt.transactionHash);
+          $("#succes-eth-cast-tx").val(hash);
           $("#before-eth-cast").hide();
           $("#error-eth-cast").hide();
-          console.log(receipt);
-        })
+
+          $.ajax({
+              url:  '/helios/elections/{{election.uuid}}/ajax/vote-registered-on-blockchain',
+              type: 'POST',
+              data: {
+                'noQuestionRegistered': questionNo
+              },
+              dataType: 'json',
+              success: function (data) {
+                if (data.message) {
+
+                  noQuestionsAdded++;
+
+                  $("#question-" + questionNo + "-transaction").val(receipt.transactionHash);
+                  buttonObject.next().show();
+                  buttonObject.hide();
+
+                  console.log(receipt);
+                  $("#example-async").find(".error").removeClass("error");
+                } else if(data.error) {
+                  alert("Question not registered");
+                  console.log(data.error);
+                }
+              },
+              error: function(jqXHR, textStatus, errorThrown) {
+                console.log("Error " + textStatus);
+              }
+            });
+        });
     
   });
   </script>

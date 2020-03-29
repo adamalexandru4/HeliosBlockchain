@@ -498,7 +498,8 @@ def trustee_upload_pk(request, election, trustee):
     # verify the pok
     if not trustee.public_key.verify_sk_proof(trustee.pok, algs.DLog_challenge_generator):
       raise Exception("bad pok for this public key")
-    trustee.public_key_hash = cryptoutils.hash_b64(utils.to_json(trustee.public_key.toJSONDict()))
+    json_pk = utils.to_json(trustee.public_key.toJSONDict()).replace(" ","")
+    trustee.public_key_hash = cryptoutils.hash_b64(json_pk)
 
     trustee.save()
     
@@ -523,7 +524,7 @@ def get_randomness(request, election):
   """
   return {
     # back to urandom, it's fine
-    "randomness" : base64.b64encode(os.urandom(32))
+    "randomness" : base64.b64encode(os.urandom(32)).decode("utf-8")
     #"randomness" : base64.b64encode(uuid.uuid4().bytes + uuid.uuid4().bytes)
     }
 

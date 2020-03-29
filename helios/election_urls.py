@@ -45,7 +45,7 @@ urlpatterns = [
     re_path(r'^trustees/(?P<trustee_uuid>[^/]+)/sendurl$', trustee_send_url, name='trustee-send-url'),
     re_path(r'^trustees/(?P<trustee_uuid>[^/]+)/keygenerator$', trustee_keygenerator, name='trustee-keygenerator'),
     re_path(r'^trustees/(?P<trustee_uuid>[^/]+)/check-sk$', trustee_check_sk, name='trustee-check-sk'),
-    re_path(r'^trustees/(?P<trustee_uuid>[^/]+)/upoad-pk$', trustee_upload_pk, name='trustee-upload-pk'),
+    re_path(r'^trustees/(?P<trustee_uuid>[^/]+)/upload-pk$', trustee_upload_pk, name='trustee-upload-pk'),
     re_path(r'^trustees/(?P<trustee_uuid>[^/]+)/decrypt-and-prove$',trustee_decrypt_and_prove, name='trustee-decrypt-and-prove'),
     re_path(r'^trustees/(?P<trustee_uuid>[^/]+)/upload-decryption$', trustee_upload_decryption, name='trustee-upload-decryption'),
     

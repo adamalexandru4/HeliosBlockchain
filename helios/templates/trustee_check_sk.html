@@ -46,9 +46,9 @@ function check_sk(sk_value) {
     document.getElementById('processing').style.display = 'block';
 
     try {
-      var secret_key = ElGamal.SecretKey.fromJSONObject(jQuery.secureEvalJSON(sk_value));
+      var secret_key = ElGamal.SecretKey.fromJSONObject(JSON.parse(sk_value));
 
-      var pk_hash = b64_sha256(jQuery.toJSON(secret_key.pk));
+      var pk_hash = b64_sha256(JSON.stringify(secret_key.pk.toJSONObject()));
       var key_ok_p = (pk_hash == PK_HASH);
     } catch (e) {
       debugger;

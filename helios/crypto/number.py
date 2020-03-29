@@ -26,7 +26,7 @@
 #
 
 from builtins import range
-# from past.utils import old_div
+from past.utils import old_div
 __revision__ = "$Id$"
 
 from helios.crypto.pct_warnings import GetRandomNumber_DeprecationWarning, PowmInsecureWarning

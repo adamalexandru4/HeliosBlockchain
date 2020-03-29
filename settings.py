@@ -344,16 +344,17 @@ CLEVER_CLIENT_SECRET = get_from_env('CLEVER_CLIENT_SECRET', "")
 # EMAIL                      #
 ##############################
 
-# EMAIL_HOST = get_from_env('EMAIL_HOST', 'localhost')
-# EMAIL_PORT = int(get_from_env('EMAIL_PORT', "2525"))
-# EMAIL_HOST_USER = get_from_env('EMAIL_HOST_USER', '')
-# EMAIL_HOST_PASSWORD = get_from_env('EMAIL_HOST_PASSWORD', '')
-# EMAIL_USE_TLS = (get_from_env('EMAIL_USE_TLS', '0') == '1')
-EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
+
+EMAIL_HOST = get_from_env('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(get_from_env('EMAIL_PORT', "587"))
+EMAIL_HOST_USER = get_from_env('EMAIL_HOST_USER', 'domnuljohnny@gmail.com')
+EMAIL_HOST_PASSWORD = get_from_env('EMAIL_HOST_PASSWORD', 'Lenovov570')
+EMAIL_USE_TLS = True #(get_from_env('EMAIL_USE_TLS', '0') == '1')
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 # EMAIL_FILE_PATH = '/Users/warwickmcnaughton/Projects/Helios/Voter_list' 
-
 
 # to use AWS Simple Email Service
 # in which case environment should contain
