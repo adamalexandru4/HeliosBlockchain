@@ -20,7 +20,7 @@ function show_key_reuse() {
 SECRET_KEY = null;
 
 function reuse_key(secret_key_text) {
-    SECRET_KEY = ElGamal.SecretKey.fromJSONObject(jQuery.secureEvalJSON(secret_key_text));
+    SECRET_KEY = ElGamal.SecretKey.fromJSONObject(JSON.parse(secret_key_text));
 
     $('#reuse').hide();
     setup_public_key_and_proof();
