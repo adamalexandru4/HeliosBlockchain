@@ -101,6 +101,10 @@ contract HeliosElection {
         votes[msg.sender] = newVote;
     }
 
+    function getAddrVote(address _voter) public view returns(address voterAddr, bytes32 hash, uint castAt, bool valid) {
+        return (votes[_voter].voterAddr, votes[_voter].hash, votes[_voter].castAt, votes[_voter].valid);
+    }
+
     function validateVote(string memory _hash, address _voter, uint _verifiedAt) public onlyOwner {
         require(keccak256(abi.encode(votes[_voter].hash)) == keccak256(abi.encode(_hash)), "Hash not matching");
         require(votes[_voter].castAt < _verifiedAt, "Don't fraud vote!");

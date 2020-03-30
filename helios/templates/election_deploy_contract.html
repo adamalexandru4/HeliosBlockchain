@@ -188,17 +188,36 @@ Registration for your election is currently <b>closed</b>, which means only the 
     var created_date_uint = new Date('{{election.created_at|date:"D, d M Y H:i:s"}}').getTime();
 
     $(document).ready(async function() {
+      ethereum.autoRefreshOnNetworkChange = false;
+        ethereum.on('chainChanged', () => {
+          document.location.reload()
+        })
 
-        var accounts;
+        if (!ethereum || !ethereum.isMetaMask) {
+          throw new Error('Please install MetaMask.')
+        }
+
+        var accounts, currentAccount;
         if (window.ethereum) {
           window.web3 = new Web3(ethereum);
           try {
               // Request access to the metamask account
               accounts = await ethereum.enable();
-              $("#owner-address").val(accounts[0]);
+              currentAccount = accounts[0];
+              $("#owner-address").val(currentAccount);
            } catch(error) {
               console.log(error);
            }
+        }
+
+        ethereum.on('accountsChanged', handleAccountsChanged)
+        function handleAccountsChanged (accounts) {
+          if (accounts.length === 0) {
+            // MetaMask is locked or the user has not connected any accounts
+            alert('Please connect to MetaMask.')
+          } else if (accounts[0] !== currentAccount) {
+            currentAccount = accounts[0];
+          }
         }
 
         if({{ contract_already_deployed }}) {
@@ -217,11 +236,11 @@ Registration for your election is currently <b>closed</b>, which means only the 
           {% endif %}
 
           electionContract = new web3.eth.Contract(election_abi, electionContractAddress, {
-                                from: accounts[0],
+                                from: currentAccount,
                                 gasPrice: web3.utils.toHex(web3.utils.toWei('3', 'gwei'))
                             });
 
-          electionContract.methods.getNoQuestions().call({from: accounts[0]})
+          electionContract.methods.getNoQuestions().call({from: currentAccount})
             .then((result) => {
               console.log(result + " questions already registered");
               for(var i = 0; i < result; i ++) {
@@ -231,7 +250,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
               }
             });
 
-           electionContract.methods.pubKey().call({ from: accounts[0]})
+           electionContract.methods.pubKey().call({ from: currentAccount})
             .then((result) => {
                 console.log(result);
                 $("#set-public-key").hide();
@@ -254,7 +273,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
               const estimatedGas = await electionContract.deploy(payload).estimateGas();
 
               let parameter = {
-                  from: accounts[0],
+                  from: currentAccount,
                   gas: web3.utils.toHex(3000000),
                   gasPrice: web3.utils.toHex(web3.utils.toWei('3', 'gwei'))
               }
@@ -273,7 +292,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
                     data: {
                       'transactionHash': transactionHashFinal,
                       'contractAddress': newContractInstance.options.address,
-                      'ownerAddress': accounts[0]
+                      'ownerAddress': currentAccount
                     },
                     dataType: 'json',
                     success: function (data) {
@@ -314,20 +333,20 @@ Registration for your election is currently <b>closed</b>, which means only the 
           }
 
           var myContract = new web3.eth.Contract(election_abi, electionContractAddress, {
-                                from: accounts[0],
+                                from: currentAccount,
                                 gasPrice: web3.utils.toHex(web3.utils.toWei('3', 'gwei'))
                             });
 
           myContract.methods.setPublicKey('0x' + hashPublicKey)
-            .send({from: accounts[0]})
+            .send({from: currentAccount})
             .on('error', function(error, receipt) {
                 alert('Setting public key failed, try again.');
-             }).on('receipt', function(receipt){
+             }).on('transactionHash', function(transactionHash){
                 $.ajax({
                       url:  '/helios/elections/{{election.uuid}}/ajax/pubkey',
                       type: 'POST',
                       data: {
-                        'pubKeyTransaction': receipt.transactionHash,
+                        'pubKeyTransaction': transactionHash,
                         'pubKeyHash': hashPublicKey
                       },
                       dataType: 'json',
@@ -335,6 +354,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
                         if (data.message) {
                           $("#set-public-key").hide();
                           $("#public-key-setted").show();
+                          $("#pub-key-transaction").val("0x" + transactionHash);
                         } else if(data.error) {
                           alert("Transaction hash not registered");
                           console.log(data.error);
@@ -359,17 +379,17 @@ Registration for your election is currently <b>closed</b>, which means only the 
           var resultType = web3.utils.asciiToHex(question.result_type);
 
           var myContract = new web3.eth.Contract(election_abi, electionContractAddress, {
-                                from: accounts[0],
+                                from: currentAccount,
                                 gasPrice: web3.utils.toHex(web3.utils.toWei('3', 'gwei'))
                             });
 
           var buttonObject = $(this);
 
           myContract.methods.addQuestion(question.question, answers, question.min, question.max, resultType)
-            .send({from: accounts[0]})
+            .send({from: currentAccount})
             .on('error', function(error, receipt) {
 
-              myContract.methods.questionNames(questionNo-1).call({from: accounts[0]})
+              myContract.methods.questionNames(questionNo-1).call({from: currentAccount})
                 .then((result) => {
                   if(result == question.question)
                   {
@@ -382,13 +402,13 @@ Registration for your election is currently <b>closed</b>, which means only the 
                     alert(error);
                   }
                 });
-            }).on('receipt', function(receipt){
+            }).on('transactionHash', function(transactionHash){
                 $.ajax({
                       url:  '/helios/elections/{{election.uuid}}/ajax/question',
                       type: 'POST',
                       data: {
                         'noQuestionRegistered': questionNo,
-                        'questionTransaction': receipt.transactionHash
+                        'questionTransaction': transactionHash
                       },
                       dataType: 'json',
                       success: function (data) {
@@ -396,11 +416,10 @@ Registration for your election is currently <b>closed</b>, which means only the 
 
                           noQuestionsAdded++;
 
-                          $("#question-" + questionNo + "-transaction").val(receipt.transactionHash);
+                          $("#question-" + questionNo + "-transaction").val(transactionHash);
                           buttonObject.next().show();
                           buttonObject.hide();
 
-                          console.log(receipt);
                           $("#example-async").find(".error").removeClass("error");
                         } else if(data.error) {
                           alert("Question not registered");

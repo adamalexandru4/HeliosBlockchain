@@ -1,0 +1,16 @@
+html, body {
+  height: 100%;
+}
+
+.navbar {
+  padding: 0.5rem;
+}
+
+.jumbotron {
+  padding: 2rem;
+}
+
+.footer {
+  background-color: #1a1a1a;
+  padding: 0.3rem;
+}
