@@ -40,70 +40,203 @@
     question, show_reviewall, answer_ordering) {
     var questionBody = `<form onsubmit="return false;" class="prettyform" id="answer_form">
                 <input type="hidden" name="question_num" value="${question_num}" />
+                <h3 class="text-center">${question.question}</h3>`;
+                
+    var noAnswers = question.answers.length;
+    var indexAnswer = 0;
 
-                <p>
-                  <br />
-                  <b>${question.question}</b>
-                  <br />
-                  <span style="font-size: 0.6em;">
-                    #${question_num + 1} of ${last_question_num + 1} &mdash; vote for`;
+    var noCols = (noAnswers > 3) ? 3 : noAnswers;
+    var noAnswersListed = 0;
+    var noRows = noAnswers / noCols;
 
-    if (question.min && question.min > 0)
-      if (question.max) questionBody += `${question.min} to ${question.max}`;
-      else questionBody += `at least ${question.min}`;
-    else if (question.max)
-      if (question.max > 1) questionBody += `up to ${question.max}`;
-      else questionBody += `as many as you approve of`;
+    questionBody += `<div class="container">`;
+    for(var row = 0; row < noRows; row++) {
+      if(indexAnswer < noAnswers) {
+        questionBody += `<div class="d-flex justify-content-around">`;
+        for(var col = 0; col < noCols; col++) {
 
-    questionBody += `</span></p>`;
+          if(indexAnswer == noAnswers)
+            break;
 
-    question.answers.forEach(function (answer, index) {
-      questionBody += `
-                <div id="answer_label_${question_num}_${answer_ordering[index]}">
-                  <input type="checkbox" class="ballot_answer"
-                    id="answer_${question_num}_${answer_ordering[index]}"
-                    name="answer_${question_num}_${answer_ordering[index]}"
-                    value="yes"
-                    onclick="BOOTH.click_checkbox(${question_num}, ${answer_ordering[index]}, this.checked);"
-                  />
-                  <label class="answer" for="answer_${question_num}_${answer_ordering[index]}">
-                    ${question.answers[answer_ordering[index]]}`;
-
-      if (question.answer_urls && question.answer_urls[answer_ordering[index]] && question.answer_urls[answer_ordering[index]] != "") {
-        questionBody += `&nbsp;&nbsp;
-                    <span style="font-size: 12pt;">
-                      [<a target="_blank" href="${question.answer_urls[answer_ordering[index]]}" 
-                        rel="noopener noreferrer" >more info</a>]
-                    </span>`;
-      }
-
-      questionBody += `
-                  </label>
+          questionBody += `<div id="answer_label_${question_num}_${answer_ordering[indexAnswer]}" class="col-${ 12 / noCols } d-flex justify-content-center">
+            <input type="checkbox" class="ballot_answer"
+                    id="answer_${question_num}_${answer_ordering[indexAnswer]}"
+                    name="answer_${question_num}_${answer_ordering[indexAnswer]}"
+                    onclick="BOOTH.click_checkbox(${question_num}, ${answer_ordering[indexAnswer]}, this.checked);"
+                    value="yes">
+            <label for="answer_${question_num}_${answer_ordering[indexAnswer]}">
+              <div class="card" id="card_${question_num}_${answer_ordering[indexAnswer]}">
+                <div class="card-state-icon" 
+                     id="answer_card_icon_${question_num}_${answer_ordering[indexAnswer]}"
+                     style="display: none;"></div>
+                <div class="card-title text-center" style="margin-bottom: 0px; padding-top: 2px;">
+                    <h2 style="margin-bottom: 0px;">${question.answers[answer_ordering[indexAnswer]]}</h2>
                 </div>`;
-    });
+            if (question.answer_urls && question.answer_urls[answer_ordering[indexAnswer]] && question.answer_urls[answer_ordering[indexAnswer]] != "") 
+            {
+              questionBody += `<hr style="margin-top: 0.25rem; margin-bottom: 0.25rem;">
+                    <span style="font-size: 12pt;">
+                      <a target="_blank" href="${question.answer_urls[answer_ordering[indexAnswer]]}" 
+                        rel="noopener noreferrer" >more info</a>
+                    </span>`;
+            }
+          questionBody += `</div>
+                </label>
+                </div>
+          `;
 
-    questionBody += `<div id="warning_box" style="color: green; text-align:center; font-size: 0.8em; padding-top:10px; padding-bottom: 10px; height:50px;">
-                        </div>`;
+          indexAnswer++;
+        }
+        noAnswersListed += noCols;
+        noCols = (noAnswers - noAnswersListed > 3) ? 3 : noAnswers - noAnswersListed;
+        questionBody += `</div>`;
+      }
+    }
+    questionBody += `</div>
+                      <div id="warning_box" style="color: green; text-align:center; font-size: 0.8em; padding-top:10px; padding-bottom: 10px; height:50px;">
+                      </div>`;
 
-    if (show_reviewall) {
-      questionBody += `<div style="float: right;">
-                            <input type="button" onclick="BOOTH.validate_and_confirm(${question_num});" value="Proceed" />
-                          </div>`;
+    var colDim = 2;
+    if(question_num != 0 || show_reviewall) // For right column grid
+          colDim = 4;
+
+    questionBody += `
+      <div class="row align-items-end justify-content-end">
+        <div class="col-${12 - colDim}">
+          <h6 class="text-muted">#${question_num + 1} of ${last_question_num + 1} &mdash; vote for`;
+
+          if (question.min && question.min > 0)
+            if (question.max) questionBody += `${question.min} to ${question.max} answers`;
+            else questionBody += ` at least ${question.min}`;
+          else if (question.max) {
+            if (question.max > 1) questionBody += ` up to`;
+            questionBody += ` ${question.max} answer(s)`;
+          }
+          else questionBody += ` as many as you approve of`;
+
+    questionBody += `
+            </h6>
+          </div>`;
+
+    questionBody += `
+      <div class="col-${colDim}">`;
+        
+    if(colDim == 4) {
+      questionBody += `<div class="row justify-content-end" style="margin-right: 0px;">`;
     }
 
     if (question_num != 0) {
-      questionBody += `<input type="button" onclick="BOOTH.previous(${question_num})" value="Previous"/>
-                &nbsp;`;
+      questionBody += `  
+            <div style="float: right; margin-right: 5px;">
+              <input type="button" class="btn btn-primary" onclick="BOOTH.previous(${question_num});" value="Previous" />
+            </div>`;
     }
     if (question_num < last_question_num) {
-      questionBody += `<input type="button" onclick="BOOTH.next(${question_num})" value="Next" />
-                &nbsp;`;
+      questionBody += `   
+          <div style="float: right; margin-right: ${show_reviewall ? 5 : 0}px">
+            <input type="button" class="btn btn-primary" onclick="BOOTH.next(${question_num});" value="Next" />
+          </div>`;
     }
-    questionBody += `<br clear="both" />
-              </form>`;
+
+    if (show_reviewall) {
+      questionBody += `     
+          <div style="float: right;">
+            <input type="button" class="btn btn-primary" onclick="BOOTH.validate_and_confirm(${question_num});" value="Proceed" />
+          </div>`;
+    }
+
+    if(colDim == 4) {
+      questionBody += `</div>`;
+    }
+    questionBody += `
+        </div>
+      </div>
+    </form>`;
 
     return questionBody;
   };
+
+  BOOTH.seal_div_content = function(cast_url, encrypted_vote_json,
+      encrypted_vote_hash, election_uuid, election_hash, election,
+      election_metadata, questions, choices) {
+    var sealBody = `
+      <div class="row">`;
+    
+    sealBody += `
+        <div class="col-8">
+        <h3>Review your Ballot</h3>
+        <div style="padding: 10px; margin-bottom: 10px; background-color: #eee; border: 1px #ddd solid; max-width: 340px;">`;
+    
+    questions.forEach(function(question, index) {
+
+      sealBody += `
+        <b>Question #${index+ 1}: ${question.short_name}</b><br>`;
+
+      if(choices[index].length == 0)  
+        sealBody += `
+          <div style="margin-left: 15px;">&#10008; <i>No choice selected</i></div>`;
+      else 
+        choices[index].forEach(function(choice) {
+          sealBody += `<div style="margin-left: 15px;">&#x2713; ${choice}</div>`;
+        });    
+          
+      if(choices[index].length < question.max)    
+        sealBody += `<span style="color: red">[ you under-voted: you may select up to ${question.max} ]</span>`;
+          
+      sealBody += `<button class="btn btn-outline-primary btn-sm" style="margin-top: 0.5rem;" onclick="BOOTH.show_question(${index}); return false;">edit responses</button>
+        <br>`;
+
+      if(questions.length > index + 1)
+        sealBody += `<hr>`;
+    });
+    sealBody += `</div>
+      </div>`;
+
+
+    if(election_metadata.use_advanced_audit_features) {
+      sealBody += `
+                <div class="col-4" style="padding-left: 0px; width:100%;">
+                  <div class="card text-white bg-warning mb-3" style="padding: 0px;" id="audit-card">
+                    <div class="card-header text-center">AUDIT BALLOT</div>
+                    <div class="card-body pl-5">
+                      <p>
+                      If you choose, you can audit your ballot and reveal how your choices were encrypted.
+                      </p>
+                      <p>
+                      You will then be guided to re-encrypt your choices for final casting.
+                      </p>
+                      <div class="d-flex justify-content-center">
+                        <input type="button" value="Verify Encryption" onclick="BOOTH.audit_ballot();" class="btn btn-outline-primary" />
+                      </div>
+                    </div>
+                  </div>
+                </div>`;
+    }
+
+    sealBody += `
+      </div>
+      <p><p>Your ballot tracker is <span class="badge badge-success"><tt style="font-size: 11pt;">${encrypted_vote_hash}</tt></span> and you can <a onclick="BOOTH.show_receipt(); return false;" href="#" class="badge badge-primary">PRINT</a> it.<br /><br /></p>
+        
+      <p>Once you click "Submit", the unencrypted version of your ballot will be destroyed, and only the encrypted version will remain.  The encrypted version will be submitted to the Helios server.</p>
+
+      <div class="row justify-content-end" style="margin-right: 0px;">
+        <div class="col-1">
+          <div id="loading_div" style="display: none;"><img  style="width: 25px;margin: 0.5rem 0.5rem 0rem 2.5rem;height: 25px;" src="loading.gif" id="proceed_loading_img" /></div>
+        </div>
+        <button class="btn btn-primary" id="proceed_button" onclick="BOOTH.cast_ballot();">Submit this Vote!</button><br />
+      </div>
+
+      <form method="POST" action="${cast_url}" id="send_ballot_form" class="prettyform">
+        <input type="hidden" name="election_uuid" value="${election_uuid}" />
+        <input type="hidden" name="election_hash" value="${election_hash}" />
+        <textarea name="encrypted_vote" style="display: none;">
+          ${encrypted_vote_json}
+        </textarea>
+      </form>
+      </div>
+      `;
+    return sealBody;
+  }
 
   BOOTH.setup_templates = function () {
     if (BOOTH.templates_setup_p)
@@ -347,7 +480,7 @@
 
 
     BOOTH.show_progress('1');
-    $("#question_div").append(BOOTH.question_div_content(question_num, BOOTH.election.questions.length - 1,
+    $("#question_div").html(BOOTH.question_div_content(question_num, BOOTH.election.questions.length - 1,
       BOOTH.election.questions[question_num], BOOTH.all_questions_seen, BOOTH.election.question_answer_orderings[question_num]));
     BOOTH.show($("#question_div"));
 
@@ -368,6 +501,13 @@
 
   BOOTH.click_checkbox_script = function (question_num, answer_num) {
     $(`#answer_${question_num}_${answer_num}`).prop("checked", true);
+    $('#card_' + question_num + "_" + answer_num).toggleClass('card_selected');
+    $('#answer_card_icon_' + question_num + "_" + answer_num).show();
+
+    $('.card').each(function (i, card){
+        if(!$(card).hasClass('card_selected'))
+          $(card).toggleClass('card_inactive');
+      });
   };
 
   BOOTH.click_checkbox = function (question_num, answer_num, checked_p) {
@@ -379,10 +519,11 @@
       if ($(BOOTH.ballot.answers[question_num]).index(answer_num) == -1)
         BOOTH.ballot.answers[question_num].push(answer_num);
 
-      $('#answer_label_' + question_num + "_" + answer_num).addClass('selected');
+      $('#card_' + question_num + "_" + answer_num).toggleClass('card_selected');
+      $('#answer_card_icon_' + question_num + "_" + answer_num).show();
     } else {
       BOOTH.ballot.answers[question_num] = UTILS.array_remove_value(BOOTH.ballot.answers[question_num], answer_num);
-      $('#answer_label_' + question_num + "_" + answer_num).removeClass('selected');
+      $('#card_' + question_num + "_" + answer_num).toggleClass('card_selected');
     }
 
     if (BOOTH.election.questions[question_num].max != null && BOOTH.ballot.answers[question_num].length >= BOOTH.election.questions[question_num].max) {
@@ -390,6 +531,11 @@
       $('.ballot_answer').each(function (i, checkbox) {
         if (!checkbox.checked)
           checkbox.disabled = true;
+      });
+
+      $('.card').each(function (i, card){
+        if(!$(card).hasClass('card_selected'))
+          $(card).toggleClass('card_inactive');
       });
 
       // do the warning only if the question allows more than one option, otherwise it's confusing
@@ -401,6 +547,13 @@
       $('.ballot_answer').each(function (i, checkbox) {
         checkbox.disabled = false;
       });
+      $('.card').each(function (i, card){
+        if($(card).hasClass('card_inactive'))
+          $(card).toggleClass('card_inactive');
+      });
+
+      $(".card-state-icon").hide();
+
       $('#warning_box').html("");
     }
   };
@@ -432,6 +585,7 @@
         var election_metadata = JSON.parse(this.response);
         BOOTH.election_metadata = election_metadata;
         BOOTH.setup_election(raw_json, election_metadata);
+        $("#election_hash").html(BOOTH.election.election_hash);
         BOOTH.show_election();
         BOOTH.election_url = election_url;
       }
@@ -448,10 +602,20 @@
   BOOTH.show_progress = function (step_num) {
     $('#progress_div').show();
     $(['1', '2', '3', '4']).each(function (n, step) {
-      if (step == step_num)
-        $('#progress_' + step).toggleClass('list-group-item-primary');
-      else
-        $('#progress_' + step).toggleClass('list-group-item-secondary');
+      if (step == step_num) {
+        if($("#progress_" + step).hasClass("list-group-item-secondary"))
+          $("#progress_" + step).toggleClass("list-group-item-secondary");
+        
+        if(!$("#progress_" + step).hasClass("list-group-item-primary"))
+          $('#progress_' + step).toggleClass('list-group-item-primary');
+      }
+      else {
+        if($("#progress_" + step).hasClass("list-group-item-primary"))
+          $("#progress_" + step).toggleClass("list-group-item-primary");
+          
+        if(!$("#progress_" + step).hasClass("list-group-item-secondary")) 
+          $('#progress_' + step).toggleClass('list-group-item-secondary');
+      }
     });
   };
 
@@ -517,17 +681,14 @@
     };
 
     var show_cast = function () {
-      $('#seal_div').processTemplate({
-        'cast_url': BOOTH.election.cast_url,
-        'encrypted_vote_json': BOOTH.encrypted_vote_json,
-        'encrypted_vote_hash': BOOTH.encrypted_ballot_hash,
-        'election_uuid': BOOTH.election.uuid,
-        'election_hash': BOOTH.election_hash,
-        'election': BOOTH.election,
-        'election_metadata': BOOTH.election_metadata,
-        'questions': BOOTH.election.questions,
-        'choices': BALLOT.pretty_choices(BOOTH.election, BOOTH.ballot)
-      });
+      $('#seal_div').html(BOOTH.seal_div_content(
+        BOOTH.election.cast_url, BOOTH.encrypted_vote_json,
+        BOOTH.encrypted_ballot_hash, BOOTH.election.uuid,
+        BOOTH.election_hash, BOOTH.election,
+        BOOTH.election_metadata, BOOTH.election.questions,
+        BALLOT.pretty_choices(BOOTH.election, BOOTH.ballot)
+      ));
+
       BOOTH.show($('#seal_div'));
       BOOTH.encrypted_vote_json = null;
     };
@@ -538,73 +699,73 @@
   BOOTH.total_cycles_waited = 0;
 
   // wait for all workers to be done
-  // BOOTH.wait_for_ciphertexts = function () {
-  //   BOOTH.total_cycles_waited += 1;
+  BOOTH.wait_for_ciphertexts = function () {
+    BOOTH.total_cycles_waited += 1;
 
-  //   var answers_done = _.reject(BOOTH.encrypted_answers, _.isNull);
-  //   var percentage_done = Math.round((100 * answers_done.length) / BOOTH.encrypted_answers.length);
+    var answers_done = _.reject(BOOTH.encrypted_answers, _.isNull);
+    var percentage_done = Math.round((100 * answers_done.length) / BOOTH.encrypted_answers.length);
 
-  //   if (BOOTH.total_cycles_waited > 250) {
-  //     alert('there appears to be a problem with the encryption process.\nPlease email help@heliosvoting.org and indicate that your encryption process froze at ' + percentage_done + '%');
-  //     return;
-  //   }
+    if (BOOTH.total_cycles_waited > 250) {
+      alert('there appears to be a problem with the encryption process.\nPlease email help@heliosvoting.org and indicate that your encryption process froze at ' + percentage_done + '%');
+      return;
+    }
 
-  //   if (percentage_done < 100) {
-  //     setTimeout(BOOTH.wait_for_ciphertexts, 500);
-  //     $('#percent_done').html(percentage_done + '');
-  //     return;
-  //   }
+    if (percentage_done < 100) {
+      setTimeout(BOOTH.wait_for_ciphertexts, 500);
+      $('#percent_done').html(percentage_done + '');
+      return;
+    }
 
-  //   BOOTH.encrypted_ballot = HELIOS.EncryptedVote.fromEncryptedAnswers(BOOTH.election, BOOTH.encrypted_answers);
+    BOOTH.encrypted_ballot = HELIOS.EncryptedVote.fromEncryptedAnswers(BOOTH.election, BOOTH.encrypted_answers);
 
-  //   BOOTH._after_ballot_encryption();
-  // };
+    BOOTH._after_ballot_encryption();
+  };
 
-  // BOOTH.seal_ballot_raw = function () {
-  //   if (BOOTH.synchronous) {
-  //     BOOTH.progress = new UTILS.PROGRESS();
-  //     var progress_interval = setInterval("BOOTH.check_encryption_status()", 500);
-  //     BOOTH.encrypted_ballot = new HELIOS.EncryptedVote(BOOTH.election, BOOTH.ballot.answers, BOOTH.progress);
-  //     clearInterval(progress_interval);
-  //     BOOTH._after_ballot_encryption();
-  //   } else {
-  //     BOOTH.total_cycles_waited = 0;
-  //     BOOTH.wait_for_ciphertexts();
-  //   }
-  // };
+  BOOTH.seal_ballot_raw = function () {
+    if (BOOTH.synchronous) {
+      BOOTH.progress = new UTILS.PROGRESS();
+      var progress_interval = setInterval("BOOTH.check_encryption_status()", 500);
+      BOOTH.encrypted_ballot = new HELIOS.EncryptedVote(BOOTH.election, BOOTH.ballot.answers, BOOTH.progress);
+      clearInterval(progress_interval);
+      BOOTH._after_ballot_encryption();
+    } else {
+      BOOTH.total_cycles_waited = 0;
+      BOOTH.wait_for_ciphertexts();
+    }
+  };
 
-  // BOOTH.request_ballot_encryption = function () {
-  //   $.post(BOOTH.election_url + "encrypt-ballot", { 'answers_json': $.toJSON(BOOTH.ballot.answers) }, function (result) {
-  //     //BOOTH.encrypted_ballot = HELIOS.EncryptedVote.fromJSONObject($.secureEvalJSON(result), BOOTH.election);
-  //     // rather than deserialize and reserialize, which is inherently slow on browsers
-  //     // that already need to do network requests, just remove the plaintexts
+  BOOTH.request_ballot_encryption = function () {
+    $.post(BOOTH.election_url + "encrypt-ballot", { 'answers_json': $.toJSON(BOOTH.ballot.answers) }, function (result) {
+      //BOOTH.encrypted_ballot = HELIOS.EncryptedVote.fromJSONObject($.secureEvalJSON(result), BOOTH.election);
+      // rather than deserialize and reserialize, which is inherently slow on browsers
+      // that already need to do network requests, just remove the plaintexts
 
-  //     BOOTH.encrypted_ballot_with_plaintexts_serialized = result;
-  //     var ballot_json_obj = $.secureEvalJSON(BOOTH.encrypted_ballot_with_plaintexts_serialized);
-  //     var answers = ballot_json_obj.answers;
-  //     for (var i = 0; i < answers.length; i++) {
-  //       delete answers[i]['answer'];
-  //       delete answers[i]['randomness'];
-  //     }
+      BOOTH.encrypted_ballot_with_plaintexts_serialized = result;
+      var ballot_json_obj = $.secureEvalJSON(BOOTH.encrypted_ballot_with_plaintexts_serialized);
+      var answers = ballot_json_obj.answers;
+      for (var i = 0; i < answers.length; i++) {
+        delete answers[i]['answer'];
+        delete answers[i]['randomness'];
+      }
 
-  //     BOOTH.encrypted_ballot_serialized = JSON.stringify(ballot_json_obj);
+      BOOTH.encrypted_ballot_serialized = JSON.stringify(ballot_json_obj);
 
-  //     window.setTimeout(BOOTH._after_ballot_encryption, 0);
-  //   });
-  // };
+      window.setTimeout(BOOTH._after_ballot_encryption, 0);
+    });
+  };
 
-  // BOOTH.seal_ballot = function () {
-  //   BOOTH.show_progress('2');
+  BOOTH.seal_ballot = function () {
+    BOOTH.show_progress('2');
 
-  //   // if we don't have the ability to do crypto in the browser,
-  //   // we use the server
-  //   if (!BigInt.in_browser) {
-  //     BOOTH.show_encryption_message_before(BOOTH.request_ballot_encryption, true);
-  //   } else {
-  //     BOOTH.show_encryption_message_before(BOOTH.seal_ballot_raw, true);
-  //     $('#percent_done_container').show();
-  //   }
-  // };
+    // if we don't have the ability to do crypto in the browser,
+    // we use the server
+    if (!BigInt.in_browser) {
+      BOOTH.show_encryption_message_before(BOOTH.request_ballot_encryption, true);
+    } else {
+      BOOTH.show_encryption_message_before(BOOTH.seal_ballot_raw, true);
+      $('#percent_done_container').show();
+    }
+  };
 
   // BOOTH.audit_ballot = function () {
   //   BOOTH.audit_trail = BOOTH.encrypted_ballot_with_plaintexts_serialized || $.toJSON(BOOTH.encrypted_ballot.get_audit_trail());
@@ -618,38 +779,45 @@
   //   });
   // };
 
-  // BOOTH.cast_ballot = function () {
-  //   // show progress spinner
-  //   $('#loading_div').show();
-  //   $('#proceed_button').attr('disabled', 'disabled');
+  BOOTH.cast_ballot = function () {
+    // show progress spinner
+    $('#loading_div').show();
+    $('#proceed_button').attr('disabled', 'disabled');
 
-  //   // at this point, we delete the plaintexts by resetting the ballot
-  //   BOOTH.setup_ballot(BOOTH.election);
+    // at this point, we delete the plaintexts by resetting the ballot
+    BOOTH.setup_ballot(BOOTH.election);
 
-  //   // clear the plaintext from the encrypted
-  //   if (BOOTH.encrypted_ballot)
-  //     BOOTH.encrypted_ballot.clearPlaintexts();
+    // clear the plaintext from the encrypted
+    if (BOOTH.encrypted_ballot)
+      BOOTH.encrypted_ballot.clearPlaintexts();
 
-  //   BOOTH.encrypted_ballot_serialized = null;
-  //   BOOTH.encrypted_ballot_with_plaintexts_serialized = null;
+    BOOTH.encrypted_ballot_serialized = null;
+    BOOTH.encrypted_ballot_with_plaintexts_serialized = null;
 
-  //   // remove audit trail
-  //   BOOTH.audit_trail = null;
+    // remove audit trail
+    BOOTH.audit_trail = null;
 
-  //   // we're ready to leave the site
-  //   BOOTH.started_p = false;
+    // we're ready to leave the site
+    BOOTH.started_p = false;
 
-  //   // submit the form
-  //   $('#send_ballot_form').submit();
-  // };
+    // submit the form
+    $('#send_ballot_form').submit();
+  };
 
-  // BOOTH.show_receipt = function () {
-  //   UTILS.open_window_with_content("Your smart ballot tracker for " + BOOTH.election.name + ": " + BOOTH.encrypted_ballot_hash);
-  // };
+  BOOTH.show_receipt = function () {
+    var printWindow = window.open('');
+    printWindow.document.write("Your smart ballot tracker for " + BOOTH.election.name + ": " + BOOTH.encrypted_ballot_hash);
+    printWindow.print();
 
-  // BOOTH.do_done = function () {
-  //   BOOTH.started_p = false;
-  // };
+    //Close window once print is finished
+    printWindow.onafterprint = function(){
+      printWindow.close()
+    };
+  };
+
+  BOOTH.do_done = function () {
+    BOOTH.started_p = false;
+  };
 
 </script>
 
@@ -751,18 +919,10 @@
           </div>
           <div id="question_div" class="panel" style="display: none;">
           </div>
-        </div>
-      </div>
-    </div>
-  </main>
-  <!-- 
-      <div id="content">
-        
-          
           <div id="processing_div" class="panel" style="display:none;">
             <h3 align="center">Processing....</h3>
           </div>
-          <div id="encrypting_div" class="panel" style="display:none;">
+          <div id="encrypting_div" class="panel" style="display:none; margin-top: 5rem; margin-bottom: 5rem;">
             <h3 align="center">
               Helios is now encrypting your ballot<br />
               <img src="encrypting.gif" />
@@ -772,24 +932,19 @@
                 >(<span id="percent_done">0</span>%)</span
               >
             </h3>
-
             <p align="center"><b>This may take up to two minutes.</b></p>
           </div>
-
-          <div id="seal_div" class="panel"></div>
-          <div id="audit_div" class="panel"></div>
+          <div id="seal_div" class="panel">
+          </div>
         </div>
-
-        <br clear="both" />
       </div>
-      <div id="footer">&nbsp;</div>
     </div>
-    <div id="applet_div"></div> -->
+  </main>
+
   <footer class="footer mt-auto">
     <div class="container text-center">
       <span class="text-muted">ELECTION FINGERPRINT:
         <span style="color: white;" id="election_hash">
-          9L+ff8vtq6A5LxCMWdj0o4s4OO+2SHc4AXG1RHXCreg
         </span></span>
     </div>
   </footer>

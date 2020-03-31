@@ -14,3 +14,51 @@ html, body {
   background-color: #1a1a1a;
   padding: 0.3rem;
 }
+
+.ballot_answer {
+  opacity: 0;
+}
+
+.card {
+  padding: 0.5rem;
+  cursor: pointer;
+}
+
+.card:hover, .card_selected {
+  border-color: green;
+}
+
+.card_inactive h2 {
+  color: #858585;
+}
+
+.card_inactive:hover {
+  border-color: rgba(0,0,0,0.125);
+}
+
+.card-state-icon {
+  position: absolute;
+  align-self: center;
+  top:-15px;
+  padding-top: 5px;
+  display: inline-block;
+  transform: rotate(45deg);
+  height: 24px;
+  width: 12px;
+  border-bottom: 7px solid green;
+  border-right: 7px solid green;
+}
+
+.accordion .card-header:after {
+  content: "\f068";
+  float: right; 
+}
+.accordion .card-header.collapsed:after {
+  /* symbol for "collapsed" panels */
+  content: "\f067"; 
+}
+
+#audit-card {
+  cursor: default;
+  border: 0px;
+}
