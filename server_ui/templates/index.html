@@ -6,98 +6,100 @@
 {% endblock %}
 
 {% block content %}
+  <div class="d-flex justify-content-center">
+    <div class="col-8">
+    <a href="/"><img border="0" style="width: 100%; height: 8em;" src="{{ settings.MAIN_LOGO_URL }}" /></a>
+  </div>
+</div>
+<div class="row" style="max-width: 100%; margin-top: 4rem;">
+  <div class="col-md-8 col-sm-12">
 
-<div class="row"><div class="large-5 columns large-centered"><a href="/"><img border="0" src="{{ settings.MAIN_LOGO_URL }}" /></a></div></div>
-<div class="row">&nbsp;</div>
-<div class="large-9 columns">
-  {% if settings.MASTER_HELIOS %}
-<p>Helios offers <b>verifiable online elections</b>.</p>
+    <p>ADVote offers <b>verifiable online elections</b>.</p>
 
-<p>We believe democracy is important, whether it’s your book club, parent-teacher association, student government, workers’ union, or state. So we’ve made truly verifiable elections as easy as everything else on the Web.</p>
+    <p>We believe democracy is important, whether it’s your book club, parent-teacher association, student government, workers’ union, or state. So we’ve made truly verifiable elections as easy as everything else on the Web.</p>
+    
+    <p>
+    ADVote elections are:
+    <ul class="disc">
+    <li><b>private</b>: no one knows how you voted.</li>
+    <li><b>verifiable</b>: each voter gets a tracking number.</li>
+    <li><b>proven</b>: Helios is open-source, vetted by top-tier experts, and in use by major organizations.</li>
+    </ul>
+    
+    <p>
+    More than <b>2,000,000 votes</b> have been cast using ADVote.
+    </p>
+    
+    {% if elections|length %}
+    <p>
+      {% for election in elections %}
+      <div class="panel">
+        <a style="font-size: 1.4em;" href="{% url "election-shortcut" election.short_name %}">{{election.name}}</a>{% if settings.SHOW_USER_INFO %}<br /> by {{election.admin.display_html_small|safe}}{% endif %}
+      </div>
+      <br />
+      {% endfor %}
+    </p>
+    {% endif %}
+    
+  </div>
 
-<p>
-Helios elections are:
-<ul class="disc">
-<li><b>private</b>: no one knows how you voted.</li>
-<li><b>verifiable</b>: each voter gets a tracking number.</li>
-<li><b>proven</b>: Helios is open-source, vetted by top-tier experts, and in use by major organizations.</li>
-</ul>
-
-<p>
-More than <b>2,000,000 votes</b> have been cast using Helios.
-</p>
-
-{% if create_p %}
-<a class="button" href="{% url "election-new" %}">create an election</a>
-{% endif %}
-
-  {% else %}
-  <p style="font-size: 1.4em;">
-    {{settings.WELCOME_MESSAGE|safe}}
-  </p>
-  
-  {% if elections|length %}
-  <p>
-    {% for election in elections %}
-    <div class="panel">
-      <a style="font-size: 1.4em;" href="{% url "election-shortcut" election.short_name %}">{{election.name}}</a>{% if settings.SHOW_USER_INFO %}<br /> by {{election.admin.display_html_small|safe}}{% endif %}
+  <div class="col-md-4 col-sm-12" id="mystuff">
+  <div class="panel">
+  {% if user %}
+    {% if create_p %}
+    <div class="d-flex justify-content-center col-12">
+      <a class="btn btn-info" href="{% url "election-new" %}">create election</a>
     </div>
-    <br />
-    {% endfor %}
-  </p>
-  {% else %}
-  <h4>no featured elections at the moment</h4>
+    <hr>
+    <div class="col-12">
+      <h5 class="subheader">Administration</h5>
+      <div class="row" style="overflow-y: auto; max-height: 100px;">
+        {% if elections_administered %}
+        <ul>
+        {% for election in elections_administered %}
+        <li> <a href="{% url "one-election-view" election.uuid %}">{{election.name}}</a></li>
+        {% endfor %}
+        </ul>
+        {% else %}
+        <em>none yet</em>
+        {% endif %}
+      </div>
+      <div class="row justify-content-center">
+        <a class="btn-sm btn-info" style="font-size: 13px; padding: 0.5rem;" href="{% url "elections-administered" %}">see all</a>
+      </div>
+    </div>
+    {% endif %}
+
+    <hr>
+    <div class="col-12">
+      <h5 class="subheader">Recent Votes</h5>
+      <div class="row" style="overflow-y: auto; max-height: 100px;">
+        {% if elections_voted %}
+        <ul>
+        {% for election in elections_voted %}
+        <li><a href="{% url "one-election-view" election.uuid %}">{{election.name}}</a></li>
+        {% endfor %}
+        </ul>
+        {% else %}
+        <em>none yet</em>
+        {% endif %}
+      </div>
+      <div class="row justify-content-center">
+        <a class="btn-sm btn-info" style="font-size: 13px; padding: 0.5rem;" href="{% url "elections-voted" %}">see all</a>
+      </div>
+    </div>
+    <div class="row"></div>
+      {% else %}
+        {% if settings.SHOW_LOGIN_OPTIONS %}
+        <h5>Log In to Start Voting</h5>
+        {{login_box|safe}}
+        {% else %}
+        <p>
+        Select an election to start voting. You will be asked for your voting credentials after you complete a ballot.
+        </p>
+    {% endif %}
   {% endif %}
-{% endif %}
-  
-</div>
-
-<div class="large-3 columns" id="mystuff">
-<div class="row">&nbsp;</div>
-<div class="panel row">
-{% if user %}
-<!--<div class="row right">{{user.display_html_big|safe}}</div>-->
-{% if create_p %}
-<a class="small button" href="{% url "election-new" %}">create election</a>
-<h5 class="subheader">Administration</h5>
-{% if elections_administered %}
-<ul>
-{% for election in elections_administered %}
-<li> <a href="{% url "one-election-view" election.uuid %}">{{election.name}}</a></li>
-{% endfor %}
-</ul>
-{% else %}
-<em>none yet</em>
-{% endif %}
-<div class="row right">
-<a class="tiny button" href="{% url "elections-administered" %}">see all</a>
-</div>
-<div class="row"></div>
-{% endif %}
-
-<h5 class="subheader">Recent Votes</h5>
-{% if elections_voted %}
-<ul>
-{% for election in elections_voted %}
-<li><a href="{% url "one-election-view" election.uuid %}">{{election.name}}</a></li>
-{% endfor %}
-</ul>
-{% else %}
-<em>none yet</em>
-{% endif %}
-<div class="row right"><a class="tiny button" href="{% url "elections-voted" %}">see all</a></div>
-<div class="row"></div>
-{% else %}
-{% if settings.SHOW_LOGIN_OPTIONS %}
-<h5>Log In to Start Voting</h5>
-{{login_box|safe}}
-{% else %}
-<p>
-Select an election to start voting. You will be asked for your voting credentials after you complete a ballot.
-</p>
-{% endif %}
-{% endif %}
-</div>
+  </div>
 </div>
 
 

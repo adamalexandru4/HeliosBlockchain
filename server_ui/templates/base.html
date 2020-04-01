@@ -9,101 +9,81 @@
 
   <link rel="stylesheet" href="/static/foundation/css/foundation.css">
   <link rel="stylesheet" href="/static/foundation-tweaks.css">
-
-
+  <link rel="stylesheet" href="/static/bootstrap-lux.min.css">
+  <link rel="stylesheet" href="/static/new-design.css">
 {% if settings.DEBUG %}  
-
 {% else %}
-
 {% endif %}
-  
+
   {% block js %}
-
   <script language="javascript" src="/static/jquery.min.js"></script>
+  <script language="javascript" src="/static/popper.min.js"></script>
+  <script language="javascript" src="/static/bootstrap.min.js"></script>
   {% endblock %}
-
-  
   {% block extra-head %}{% endblock %}
 </head>
-<body>
-  <div class="wrapper">
-  <nav class="top-bar">
-    <ul class="title-area">
-      <!-- Title Area -->
-      <li class="name">
-        <h1><a href="/"><img src="/static/tinylogo.png"></a></h1>
-      </li>
-      <li class="toggle-topbar menu-icon"><a href="#"><span>menu</span></a></li>
-    </ul>
- 
-    <section class="top-bar-section">
-      <!-- Right Nav Section -->
-      <ul class="right">
-	{% if user and user.admin_p %}
-	<li><a href="{% url "stats-view-home" %}">Admin</a></li>
-	<li class="divider"></li>
-	{% endif %}
-	{% if not settings.MASTER_HELIOS %}
-	<li><a href="http://heliosvoting.org">About Helios</a></li>
-	{% endif %}
-      </ul>
+<body class="d-flex flex-column h-100">
+    <div style="box-shadow: 0 10px 6px -6px #777;">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-primary" style="padding: 0.7rem;">
+        <a href="/" class="navbar-brand"><img style="width: 35px;" src="/static/tinylogo.png"></a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
       
-      <ul>
-        <li><a href="/">{{settings.SITE_TITLE}}</a></li>
-	{% if settings.MASTER_HELIOS %}
-        <li class="divider"></li>
-        <li><a href="/about">About</a></li>
-        <li class="divider"></li>
-        <li><a target="_new" href="https://github.com/benadida/helios-server">Code</a></li>
-        <li class="divider"></li>
-        <li><a href="/docs">Docs</a></li>
-        <li class="divider"></li>
-        <li><a href="/faq">FAQ</a></li>
-        <li class="divider"></li>
-        <li><a href="/privacy">Privacy</a></li>
-	{% endif %}
-        <li class="divider"></li>
-        <li><a href="mailto:{{settings.HELP_EMAIL_ADDRESS}}">Help!</a></li>
-      </ul>
-    </section>
-  </nav>
+        <div class="collapse navbar-collapse" id="navbarColor01">
+          <ul class="navbar-nav mr-auto">
+            <li class="nav-item active">
+              <a class="nav-link" style="font-size: 1rem;" href="/">ADVOTE <span class="sr-only">(current)</span></a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" style="margin-top: 0.2rem;" href="/about">About</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" style="margin-top: 0.2rem;" href="/docs">Docs</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" style="margin-top: 0.2rem;" href="/faq">FAQ</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" style="margin-top: 0.2rem;" href="mailto:{{settings.HELP_EMAIL_ADDRESS}}">Help</a>
+            </li>
+          </ul>
+          <span class="navbar-text">
+            {% if user and user.admin_p %}
+            <a href="{% url "stats-view-home" %}">Admin</a>
+            <span style="border: 1px solid gray; margin-right: 1rem; margin-left: 1rem;"></span>
+            {% endif %}
+            {% if user %}
+            logged in as <b>{{user.display_html_small|safe}}</b>
+            <a class="btn-sm btn-info ml-2" href="{% url "auth-views-logout" %}?return_url=/">logout</a><br />
+          {% else %}
+            {% if voter %}
+            You are signed in as voter <u>{% if voter.alias %}{{voter.alias}}{% else %}{{voter.name}}{% endif %}</u> in election <u>{{voter.election.name}}</u>. [<a href="{{settings.SECURE_URL_HOST}}{% url "auth-views-logout" %}?return_url={{CURRENT_URL}}">sign out</a>]
+            {% else %}
+              {% if settings.SHOW_LOGIN_OPTIONS %}
+                  <a class="btn-sm btn-info" href="{{settings.SECURE_URL_HOST}}{% url "auth-views-index" %}?return_url={{CURRENT_URL}}">log in</a>
+              {% endif %}
+            {% endif %}
+          {% endif %}
+          </span>
+        </div>
+      </nav>
+      </div>
 
-
-  <!-- Main Page Content and Sidebar -->
-      <div class="container">
-  <div class="row" id="contentbody">
-      {% block content %}{% endblock %}
-  </div>
-</div>
-  
-  <div class="push"></div>
-  </div>
-
-  <div class="footer" id="footer">
-<!--    <span style="float:right;">
-      {% if settings.FOOTER_LOGO_URL %}
-      <img src="{{settings.FOOTER_LOGO_URL}}" />
-      {% endif %}
-    </span>-->
-    {% if user %}
-    logged in as <b>{{user.display_html_small|safe}}</b>&nbsp;&nbsp;
-    <a class="tiny button" href="{% url "auth-views-logout" %}?return_url={{CURRENT_URL}}">logout</a><br />
-    {% else %}
-    {% if voter %}
-    You are signed in as voter <u>{% if voter.alias %}{{voter.alias}}{% else %}{{voter.name}}{% endif %}</u> in election <u>{{voter.election.name}}</u>. [<a href="{{settings.SECURE_URL_HOST}}{% url "auth-views-logout" %}?return_url={{CURRENT_URL}}">sign out</a>]
-    {% else %}
-{% if settings.SHOW_LOGIN_OPTIONS %}
-    not logged in. <a class="tiny button" href="{{settings.SECURE_URL_HOST}}{% url "auth-views-index" %}?return_url={{CURRENT_URL}}">log in</a>
-{% else %}
-powered by <a href="http://heliosvoting.org">Helios Voting</a>.
-{% endif %}
-    {% endif %}
-    {% endif %}
-      <br clear="right" />
+    <!-- Main Page Content and Sidebar -->
+    <div class="container" >
+      <div id="contentbody" class="jumbotron" style="background: linear-gradient(0deg, #f7f7f9, transparent);margin-top: 2rem;box-shadow: 0 8px 6px -6px rgba(0, 0, 0, 0.19);">
+          {% block content %}{% endblock %}
+      </div>
     </div>
   
-  </div>
+    <div class="push"></div>
+    </div>
 
+  <footer class="footer mt-auto d-flex py-2 justify-content-center bg-primary text-white">
+    COPYRIGHT @ Adam Alexandru
+  </footer>
+  </div>
     {% block end-js %}
     {% endblock %}
 </body>

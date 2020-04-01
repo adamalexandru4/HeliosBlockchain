@@ -1,7 +1,6 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -25,7 +24,7 @@
   <script language="javascript" src="js/jscrypto/elgamal.js"></script>
   <script language="javascript" src="js/jscrypto/sha1.js"></script>
   <script language="javascript" src="js/jscrypto/sha2.js"></script>
-  <script language="javascript" src="js/jscrypto/helios.js"></script>-->
+  <script language="javascript" src="js/jscrypto/helios.js"></script>
   
 
   <script language="javascript" src="js/latest/popper.min.js"></script>
@@ -40,7 +39,7 @@
     question, show_reviewall, answer_ordering) {
     var questionBody = `<form onsubmit="return false;" class="prettyform" id="answer_form">
                 <input type="hidden" name="question_num" value="${question_num}" />
-                <h3 class="text-center">${question.question}</h3>`;
+                <h2 class="text-center" style="margin-top: 2rem; margin-bottom: 2rem;">${question.question}</h2>`;
                 
     var noAnswers = question.answers.length;
     var indexAnswer = 0;
@@ -101,7 +100,7 @@
           colDim = 4;
 
     questionBody += `
-      <div class="row align-items-end justify-content-end">
+      <div class="row align-items-end justify-content-end" style="height: 45vh;">
         <div class="col-${12 - colDim}">
           <h6 class="text-muted">#${question_num + 1} of ${last_question_num + 1} &mdash; vote for`;
 
@@ -128,20 +127,20 @@
     if (question_num != 0) {
       questionBody += `  
             <div style="float: right; margin-right: 5px;">
-              <input type="button" class="btn btn-primary" onclick="BOOTH.previous(${question_num});" value="Previous" />
+              <input type="button" style="font-size: 1rem;" class="btn btn-primary" onclick="BOOTH.previous(${question_num});" value="Previous" />
             </div>`;
     }
     if (question_num < last_question_num) {
       questionBody += `   
           <div style="float: right; margin-right: ${show_reviewall ? 5 : 0}px">
-            <input type="button" class="btn btn-primary" onclick="BOOTH.next(${question_num});" value="Next" />
+            <input type="button" style="font-size: 1rem;" class="btn btn-primary" onclick="BOOTH.next(${question_num});" value="Next" />
           </div>`;
     }
 
     if (show_reviewall) {
       questionBody += `     
           <div style="float: right;">
-            <input type="button" class="btn btn-primary" onclick="BOOTH.validate_and_confirm(${question_num});" value="Proceed" />
+            <input type="button" style="font-size: 1rem;" class="btn btn-primary" onclick="BOOTH.validate_and_confirm(${question_num});" value="Proceed" />
           </div>`;
     }
 
@@ -164,13 +163,18 @@
     
     sealBody += `
         <div class="col-8">
-        <h3>Review your Ballot</h3>
-        <div style="padding: 10px; margin-bottom: 10px; background-color: #eee; border: 1px #ddd solid; max-width: 340px;">`;
-    
+        <h3 style="margin-bottom: 1.2rem;">Review your Ballot</h3>
+        <div style="padding: 10px; margin-bottom: 10px; background-color: #eee; border: 1px #ddd solid;  
+                    max-height: 300px;
+                    overflow-y: auto;
+                    overflow-x: hidden;">`;
+        
     questions.forEach(function(question, index) {
 
       sealBody += `
-        <b>Question #${index+ 1}: ${question.short_name}</b><br>`;
+        <div class="row">
+          <div class="col-9">
+        <h5>Question #${index+ 1}:<span style="font-weight: lighter;"> ${question.short_name}</span></h5>`;
 
       if(choices[index].length == 0)  
         sealBody += `
@@ -183,8 +187,12 @@
       if(choices[index].length < question.max)    
         sealBody += `<span style="color: red">[ you under-voted: you may select up to ${question.max} ]</span>`;
           
-      sealBody += `<button class="btn btn-outline-primary btn-sm" style="margin-top: 0.5rem;" onclick="BOOTH.show_question(${index}); return false;">edit responses</button>
-        <br>`;
+      sealBody += `
+          </div>
+          <div class="col-3">
+            <button class="btn btn-outline-primary btn-sm" style="margin-top: 0.5rem;" onclick="BOOTH.show_question(${index}); return false;">edit responses</button>
+          </div>
+        </div>`;
 
       if(questions.length > index + 1)
         sealBody += `<hr>`;
@@ -196,9 +204,9 @@
     if(election_metadata.use_advanced_audit_features) {
       sealBody += `
                 <div class="col-4" style="padding-left: 0px; width:100%;">
-                  <div class="card text-white bg-warning mb-3" style="padding: 0px;" id="audit-card">
-                    <div class="card-header text-center">AUDIT BALLOT</div>
-                    <div class="card-body pl-5">
+                  <div class="card bg-bg-secondary mb-3" style="padding: 0px; border: 1px solid lightgray" id="audit-card">
+                    <div class="card-header text-primary text-center">AUDIT BALLOT</div>
+                    <div class="card-body text-secondary pl-5">
                       <p>
                       If you choose, you can audit your ballot and reveal how your choices were encrypted.
                       </p>
@@ -215,15 +223,15 @@
 
     sealBody += `
       </div>
-      <p><p>Your ballot tracker is <span class="badge badge-success"><tt style="font-size: 11pt;">${encrypted_vote_hash}</tt></span> and you can <a onclick="BOOTH.show_receipt(); return false;" href="#" class="badge badge-primary">PRINT</a> it.<br /><br /></p>
+      <p style="margin-top: 2rem;"><p>Your ballot tracker is <span class="badge badge-success"><tt style="font-size: 1.5rem;">${encrypted_vote_hash}</tt></span> and you can <a onclick="BOOTH.show_receipt(); return false;" href="#" class="badge badge-primary" style="font-size: 0.8rem;">PRINT</a> it.<br /><br /></p>
         
       <p>Once you click "Submit", the unencrypted version of your ballot will be destroyed, and only the encrypted version will remain.  The encrypted version will be submitted to the Helios server.</p>
 
-      <div class="row justify-content-end" style="margin-right: 0px;">
+      <div class="row justify-content-end" style="margin-right: 0px; margin-top: 9rem;">
         <div class="col-1">
           <div id="loading_div" style="display: none;"><img  style="width: 25px;margin: 0.5rem 0.5rem 0rem 2.5rem;height: 25px;" src="loading.gif" id="proceed_loading_img" /></div>
         </div>
-        <button class="btn btn-primary" id="proceed_button" onclick="BOOTH.cast_ballot();">Submit this Vote!</button><br />
+        <button class="btn btn-primary" style="font-size: 1rem;" id="proceed_button" onclick="BOOTH.cast_ballot();">Submit this Vote!</button><br />
       </div>
 
       <form method="POST" action="${cast_url}" id="send_ballot_form" class="prettyform">
@@ -236,6 +244,58 @@
       </div>
       `;
     return sealBody;
+  }
+
+  BOOTH.audit_div_content = function(audit_trail, election_url) {
+    var auditBody = ``;
+
+    auditBody += `
+<h3 class="text-center">Your audited ballot</h3>
+<div class="card-deck">
+  <div class="card" id="audit-card">
+    <div class="card-body">
+      <h5 class="card-title" style="color: black;">WHY?</h5>
+      <p class="card-text">Helios prevents you from auditing and casting the same ballot to provide you with some protection against coercion.</p>
+    </div>
+  </div>
+  <div class="card" id="audit-card" style="background-color: #f1f1a98c;">
+    <div class="card-body">
+      <h5 class="card-title" style="color: black;">IMPORTANT</h5>
+      <p class="card-text">This ballot, now that it has been audited, <em>will not be tallied</em>.<br />
+To cast a ballot, you must click the "Back to Voting" button below, re-encrypt it, and choose "cast" instead of "audit."</p>
+    </div>
+  </div>
+  <div class="card" id="audit-card">
+    <div class="card-body">
+      <h5 class="card-title" style="color: black;">NOW WHAT?</h5>
+      <p class="card-text"><span style="background-color: #84c6e2;"><a onclick="$('#audit_trail').select(); return false;" href="#">Select your ballot audit info</a></span>, copy it to your clipboard, then use the <span style="background-color: #84c6e2;"><a target="_blank" href="single-ballot-verify.html?election_url=${election_url}">ballot verifier</a></span> to verify it.<br />
+Once you're satisfied, click the "back to voting" button to re-encrypt and cast your ballot.</p>
+    </div>
+  </div>
+</div>
+
+<form action="#">
+  <label style="background-color: lightgray;width: 100%; margin-top: 1rem; margin-bottom: 0px; text-align: center;">BALLOT</label>
+<textarea name="audit_trail" id="audit_trail" style="resize: none; width: 100%; height: 9.5rem;" wrap="soft">
+${audit_trail}
+</textarea>
+<p>
+Before going back to voting, you can post this audited ballot to the Helios tracking center so that others might double-check the verification of this ballot.
+</p>
+<p>Even if you post your audited ballot, you must go back to voting and choose "cast" if you want your vote to count.
+</p>
+<div class="d-flex bd-highlight mb-3">
+  <div class="mr-auto p-2 bd-highlight">
+    <input type="button" value="back to voting" onclick="BOOTH.reset_ciphertexts();BOOTH.seal_ballot();" class="btn btn-primary" />
+  </div>
+  <div class="p-2 bd-highlight">
+    <input type="button" value="post audited ballot to tracking center" onclick="$(this).attr('disabled', 'disabled');BOOTH.post_audited_ballot();" id="post_audited_ballot_button" class="btn btn-primary"/>
+  </div>
+</div>
+</form>
+`;
+
+    return auditBody;
   }
 
   BOOTH.setup_templates = function () {
@@ -767,17 +827,19 @@
     }
   };
 
-  // BOOTH.audit_ballot = function () {
-  //   BOOTH.audit_trail = BOOTH.encrypted_ballot_with_plaintexts_serialized || $.toJSON(BOOTH.encrypted_ballot.get_audit_trail());
+  BOOTH.audit_ballot = function () {
+    BOOTH.audit_trail = BOOTH.encrypted_ballot_with_plaintexts_serialized || JSON.stringify(BOOTH.encrypted_ballot.get_audit_trail());
 
-  //   BOOTH.show($('#audit_div')).processTemplate({ 'audit_trail': BOOTH.audit_trail, 'election_url': BOOTH.election_url });
-  // };
+    // BOOTH.show($('#audit_div')).processTemplate({ 'audit_trail': BOOTH.audit_trail, 'election_url': BOOTH.election_url });
+    $("#audit_div").html(BOOTH.audit_div_content(BOOTH.audit_trail, BOOTH.election_url));
+    BOOTH.show($("#audit_div"));
+  };
 
-  // BOOTH.post_audited_ballot = function () {
-  //   $.post(BOOTH.election_url + "post_audited_ballot", { 'audited_ballot': BOOTH.audit_trail }, function (result) {
-  //     alert('This audited ballot has been posted.\nRemember, this vote will only be used for auditing and will not be tallied.\nClick "back to voting" and cast a new ballot to make sure your vote counts.');
-  //   });
-  // };
+  BOOTH.post_audited_ballot = function () {
+    $.post(BOOTH.election_url + "post_audited_ballot", { 'audited_ballot': BOOTH.audit_trail }, function (result) {
+      alert('This audited ballot has been posted.\nRemember, this vote will only be used for auditing and will not be tallied.\nClick "back to voting" and cast a new ballot to make sure your vote counts.');
+    });
+  };
 
   BOOTH.cast_ballot = function () {
     // show progress spinner
@@ -839,9 +901,9 @@
       </div>
     </nav>
   </header>
-  <main role="main" class="flex-shrink-0">
-    <div class="container">
-      <div class="jumbotron mt-3">
+  <main role="main" class="flex-shrink-0" style="height: 90%;">
+    <div class="container" style="height: 97%;">
+      <div class="jumbotron mt-3" style="margin-bottom: 1rem; height: 100%;">
         <div id="election_div" class="panel">
           <h3 class="text-center">
             Checking capabilities and loading election booth...
@@ -866,7 +928,7 @@
         </div>
         <div id="page">
           <div id="header" style="display: none;">
-            <h2 class="text-center">Alegeri prezidentiale 2020</h2>
+            <h1 class="text-center" style="font-size: 3rem;">Alegeri prezidentiale 2020</h1>
             <ul class="list-group list-group-horizontal mt-3" id="progress_div" style="width: 100%;">
               <li class="list-group-item flex-fill text-center" id="progress_1">
                 Select answer(s)
@@ -880,39 +942,40 @@
             </ul>
             <hr />
           </div>
-          <div id="election_div_after_loading" class="panel" style="display: none;">
-            <p class="font-weight-bold">
+          <div id="election_div_after_loading" class="panel" style="display: none; margin-top: 1.5rem;">
+            <p class="font-weight-bold" style="font-size: 1.2rem;">
               To cast a vote, you will be led through the following steps.<br />
               If you have not yet logged in, you will be asked to do so at the
               very end of the process.
             </p>
-            <ol>
-              <li>
-                <b class="font-weight-bold">Select</b> your preferred
+            <ol style="margin-top: 2rem;">
+              <li style="font-size: 1.5rem;">
+                <b class="font-weight-bold" style="color: black;">SELECT</b> your preferred
                 options.<br />
-                <span style="font-size: 14pt;" class="text-muted">You can easily navigate forwards and backwards.</span>
+                <span style="font-size: 1.3rem;" class="text-muted">You can easily navigate forwards and backwards.</span>
               </li>
               <br />
-              <li>
-                <b class="font-weight-bold">Review &amp; Confirm</b> your
+              <li style="font-size: 1.5rem;">
+                <b class="font-weight-bold" style="color: black;">REVIEW &amp; CONFIRM</b> your
                 choices.<br />
-                <span style="font-size: 14pt;" class="text-muted">
+                <span style="font-size: 1.3rem;" class="text-muted">
                   Your choices are encrypted safely inside your browser, and
                   you get a smart ballot tracker.<br />
                 </span>
               </li>
               <br />
-              <li>
-                <b class="font-weight-bold">Submit</b> your encrypted
+              <li style="font-size: 1.5rem;">
+                <b class="font-weight-bold" style="color: black;">SUBMIT</b> your encrypted
                 ballot.<br />
-                <span style="font-size: 14pt;" class="text-muted">
+                <span style="font-size: 1.3rem;" class="text-muted">
                   You will be asked to log in to submit your encrypted ballot
                   for tallying.
                 </span>
               </li>
             </ol>
-            <div class="text-center">
-              <button class="btn btn-primary" onclick="BOOTH.show_question(0);">
+            <div class="text-center" style="margin-top: 8rem;">
+              <button class="btn btn-primary" onclick="BOOTH.show_question(0);"
+                style="width: 10rem; height: 5rem; font-size: 1.5rem;">
                 Start
               </button>
             </div>
@@ -934,7 +997,9 @@
             </h3>
             <p align="center"><b>This may take up to two minutes.</b></p>
           </div>
-          <div id="seal_div" class="panel">
+          <div id="seal_div" class="panel" style="display: none;">
+          </div>
+          <div id="audit_div" class="panel" style="display: none;">
           </div>
         </div>
       </div>
