@@ -1,8 +1,8 @@
 {% extends TEMPLATE_BASE %}
-
+{% load widget_tweaks %}
 {% block content %}
 
-  <h2 class="title">{{election.name}} &mdash; Update <span style="font-size:0.7em;">[<a href="{% url "one-election-view" election.uuid %}">cancel</a>]</span></h2>
+  <h2 class="title">{{election.name}} &mdash; Update <span style="font-size:0.7em; float: right;"><a class="btn btn-danger" href="{% url "one-election-view" election.uuid %}">cancel</a></span></h2>
   
 {% if error %}
 <p style="color: red;">
@@ -10,14 +10,74 @@
 </p>
 {% endif %}
   
-  <form class="prettyform" action="" method="POST" id="edit_election_form">
-    <input type="hidden" name="csrf_token" value="{{csrf_token}}" />
-    <table class="pretty">
-     {{election_form.as_table}}
-     </table>
-  <div>
-  <label for="">&nbsp;</label><input type="submit" value="Update" id="update_button" />
+<form action="" method="POST" id="edit_election_form" style="margin-bottom: 0;">
+  <input type="hidden" name="csrf_token" value="{{csrf_token}}" />
+  {% for hidden_field in election_form.hidden_fields %}
+    {{ hidden_field }}
+  {% endfor %}
+
+  {% if election_form.non_field_errors %}
+    <div class="alert alert-danger" role="alert">
+      {% for error in election_form.non_field_errors %}
+        {{ error }}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% for field in election_form.visible_fields %}
+    {% if field|widget_type == "checkboxinput" or field|widget_type == "splitselectdatetimewidget" %}
+    <div class="form-inline" style="margin-bottom: 0.5rem;">
+    {% else %}
+    <div class="form-group">
+    {% endif %}
+      {% if field.label and field|widget_type != "checkboxinput" %}
+      <label for="{{ field.id_for_label }}" style="font-size: 1rem;">{{ field.label }}</label>
+      {% endif %}
+
+      {% if election_form.is_bound %}
+        {% if field.errors %}
+          {% render_field field class="form-control is-invalid" style="font-size: 1rem;" %}
+          {% for error in field.errors %}
+            <div class="invalid-feedback" style="font-size: 1rem;">
+              {{ error }}
+            </div>
+          {% endfor %}
+        {% else %}
+          {% if field|widget_type == "checkboxinput" %}
+            <div class="form-check is-valid">
+              <label class="form-check-label" style="font-size: 1.1rem;">
+                <input class="form-check-input" type="checkbox" id="{{field.id_for_label}}" name="{{field.label}}" style="margin: 0 0.5rem 0 0;">
+                {{field.label}}
+              </label>
+            </div>
+          {% else %}
+            {% render_field field class="form-control is-valid" style="font-size: 1rem; margin: 0px;" %}
+          {% endif %}
+        {% endif %}
+      {% else %}
+        {% if field|widget_type == "checkboxinput" %}
+          <div class="form-check">
+            <label class="form-check-label" style="font-size: 1.1rem;">
+              <input class="form-check-input" type="checkbox" id="{{field.id_for_label}}" name="{{field.label}}" style="margin: 0 0.5rem 0 0;">
+              {{field.label}}
+            </label>
+          </div>
+        {% else %}
+          {% render_field field class="form-control" style="font-size: 1rem; margin: 0px;" %}
+        {% endif %}
+      {% endif %}
+
+      {% if field.help_text and field|widget_type != "checkboxinput" and field|widget_type != "splitselectdatetimewidget" %}
+        <small class="form-text text-muted">{{ field.help_text }}</small>
+      {% endif %}
+    </div>
+    {% if field.help_text and field|widget_type == "checkboxinput" or field|widget_type == "splitselectdatetimewidget" %}
+      <small class="form-text text-muted" style="margin-top: 0px; margin-bottom: 0.5rem;">{{ field.help_text }}</small>
+    {% endif %}
+  {% endfor %}
+  <div class="d-flex justify-content-center" style="padding-top: 2.5rem;">
+    <button type="submit" class="btn btn-primary" style="font-size: 1rem;">Update</button>
   </div>
-  </form>
+</form>
 
 {% endblock %}

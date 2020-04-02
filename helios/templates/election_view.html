@@ -13,26 +13,26 @@
 {% if election.is_archived %}
 [archived]
 {% endif %}
-{% if admin_p %}
-&nbsp;{% if election.is_archived %}<a class="small button" href="{% url "one-election-archive" election_uuid=election.uuid %}?archive_p=0">unarchive it</a>{% else %}<a class="small button" href="{% url "one-election-archive" election_uuid=election.uuid %}?archive_p=1">archive it</a>{% endif %}
-<a class="small button" onclick="return window.confirm('Are you sure you want to copy this election?');" href="{% url "one-election-copy" election_uuid=election.uuid %}">copy</a>
-{% endif %}
-<br />
-{% if admin_p %}
-{% if not election.private_p %}
-{% if election.featured_p %}
-this {{election.election_type}} is featured on the front page.
-{% if can_feature_p %}
-[<a href="{% url "one-election-set-featured" election.uuid %}?featured_p=0">unfeature it</a>]
-{% endif %}
-{% else %}
-this {{election.election_type}} is <u>not</u> featured on the front page.
-{% if can_feature_p %}
-[<a href="{% url "one-election-set-featured" election.uuid %}?featured_p=1">feature it</a>]
-{% endif %}
-{% endif %}
-{% endif %}
-{% endif %}
+
+  {% if admin_p %}
+    &nbsp;{% if election.is_archived %}<a class="small button" href="{% url "one-election-archive" election_uuid=election.uuid %}?archive_p=0">unarchive it</a>{% else %}<a class="small button" href="{% url "one-election-archive" election_uuid=election.uuid %}?archive_p=1">archive it</a>{% endif %}
+  {% endif %}
+  <br />
+    {% if admin_p %}
+      {% if not election.private_p %}
+        {% if election.featured_p %}
+          this {{election.election_type}} is featured on the front page.
+          {% if can_feature_p %}
+            [<a href="{% url "one-election-set-featured" election.uuid %}?featured_p=0">unfeature it</a>]
+          {% endif %}
+          {% else %}
+            this {{election.election_type}} is <u>not</u> featured on the front page.
+          {% if can_feature_p %}
+            [<a href="{% url "one-election-set-featured" election.uuid %}?featured_p=1">feature it</a>]
+          {% endif %}
+        {% endif %}
+      {% endif %}
+    {% endif %}
 </p>
 
 </div>

@@ -10,4 +10,6 @@ urlpatterns = [
     re_path(r'^helios/', include('helios.urls')),
     re_path(r'^', include('server_ui.urls')),
     re_path(r'booth/(?P<path>.*)$', serve, {'document_root' : settings.ROOT_PATH + '/heliosbooth'}),
+    re_path(r'verifier/(?P<path>.*)$', serve, {'document_root' : settings.ROOT_PATH + '/heliosverifier'}),
+
 ]

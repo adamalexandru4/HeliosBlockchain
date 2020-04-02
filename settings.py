@@ -192,6 +192,7 @@ INSTALLED_APPS = (
     # 'djangosecure',
     'django.contrib.sessions',
     'django.contrib.staticfiles',
+    'widget_tweaks',
     #'django.contrib.sites',
     ## needed for queues
     #'djcelery',

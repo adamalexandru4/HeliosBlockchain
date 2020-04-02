@@ -200,8 +200,7 @@ ElGamal.Ciphertext = Class.extend({
   decrypt: function(list_of_dec_factors) {
     var running_decryption = this.beta;
     var self = this;
-    // Converted
-    (list_of_dec_factors).forEach(function(dec_factor) {
+    _(list_of_dec_factors).each(function(dec_factor) {
       running_decryption = dec_factor.modInverse(self.pk.p).multiply(running_decryption).mod(self.pk.p);    
     });
     
@@ -247,8 +246,8 @@ ElGamal.Ciphertext = Class.extend({
     // go through all plaintexts and simulate the ones that must be simulated.
     // note how the interface is as such so that the result does not reveal which is the real proof.
     var self = this;
-    // Converted
-    var proofs = (list_of_plaintexts).map(function(plaintext, p_num) {
+    
+    var proofs = _(list_of_plaintexts).map(function(plaintext, p_num) {
       if (p_num == real_index) {
         // no real proof yet
         return {};
@@ -267,7 +266,7 @@ ElGamal.Ciphertext = Class.extend({
       proofs[real_index] = {'commitment' : commitment};
 
       // get the commitments in a list and generate the whole disjunctive challenge
-      var commitments = (proofs).map(function(proof) {
+      var commitments = _(proofs).map(function(proof) {
         return proof.commitment;
       });
       
@@ -275,8 +274,7 @@ ElGamal.Ciphertext = Class.extend({
       
       // now we must subtract all of the other challenges from this challenge.
       var real_challenge = disjunctive_challenge;
-      // Converted
-      (proofs).forEach(function(proof, proof_num) {
+      _(proofs).each(function(proof, proof_num) {
         if (proof_num != real_index)
           real_challenge = real_challenge.add(proof.challenge.negate());
       });
@@ -304,14 +302,13 @@ ElGamal.Ciphertext = Class.extend({
     // check the overall challenge
     
     // first the one expected from the proofs
-    var commitments = (proofs).map(function(proof) {return proof.commitment;});
+    var commitments = _(proofs).map(function(proof) {return proof.commitment;});
     var expected_challenge = challenge_generator(commitments);
     
     // then the one that is the sum of the previous one.
     var sum = new BigInt("0", 10); var self = this;
-    // _(proofs).each(function(proof) {sum = sum.add(proof.challenge).mod(self.pk.q);});
-    (proofs).forEach(function(proof) {sum = sum.add(proof.challenge).mod(self.pk.q);});
-
+    _(proofs).each(function(proof) {sum = sum.add(proof.challenge).mod(self.pk.q);});
+    
     return expected_challenge.equals(sum);    
   },
   
@@ -465,8 +462,7 @@ ElGamal.DisjunctiveProof = Class.extend({
   },
   
   toJSONObject: function() {
-    // Converted
-    return (this.proofs).map(function(proof) {
+    return _(this.proofs).map(function(proof) {
       return proof.toJSONObject();
     });
   }
@@ -477,8 +473,7 @@ ElGamal.DisjunctiveProof.fromJSONObject = function(d) {
     return null;
     
   return new ElGamal.DisjunctiveProof(
-    // Converted
-    (d).map(function(p) {
+    _(d).map(function(p) {
       return ElGamal.Proof.fromJSONObject(p);
     })
   );
@@ -522,8 +517,7 @@ ElGamal.disjunctive_challenge_generator = function(commitments) {
   var strings_to_hash = [];
 
   // go through all proofs and append the commitments
-  // Converted
-  (commitments).forEach(function(commitment) {
+  _(commitments).each(function(commitment) {
     // toJSONObject instead of toString because of IE weirdness.
     strings_to_hash[strings_to_hash.length] = commitment.A.toJSONObject();
     strings_to_hash[strings_to_hash.length] = commitment.B.toJSONObject();

@@ -46,8 +46,10 @@ from django.apps import apps
 # ETHEREUM                  #
 #############################
 
+from .ethereum.interface import ContractInterface
 from web3 import Web3, HTTPProvider
 w3 = Web3(HTTPProvider('http://127.0.0.1:8545'))
+w3.eth.defaultAccount = w3.eth.accounts[2]
 
 Election = apps.get_model('helios', 'Election')
 QuestionBlockchain = apps.get_model('helios', 'QuestionBlockchain')
@@ -211,7 +213,7 @@ def election_new(request):
     if election_form.is_valid():
       # create the election obj
       election_params = dict(election_form.cleaned_data)
-      
+
       # is the short name valid
       if utils.urlencode(election_params['short_name']) == election_params['short_name']:
         election_params['uuid'] = str(uuid.uuid1())
@@ -222,6 +224,7 @@ def election_new(request):
 
         user = get_user(request)
         election_params['admin'] = user
+
         try:
           election = Election.objects.create(**election_params)
           election.generate_trustee(ELGAMAL_PARAMS)
@@ -752,7 +755,25 @@ def one_election_cast_confirm(request, election):
     # bring back to the confirmation page to let him know
     if not voter:
       return HttpResponseRedirect(settings.SECURE_URL_HOST + reverse(one_election_cast_confirm, args=[election.uuid]))
-    
+
+    # send transaction with the vote
+    vote_hash_repadding = vote_fingerprint
+    vote_hash_repadding += "=" * ((4 - len(vote_fingerprint) % 4) % 4)
+    vote_hash_hex = base64.b64decode(vote_hash_repadding).hex()
+
+    election_contract_compiled = settings.COMPILE_ELECTION_CONTRACT.get(settings.CONTRACTS_DIR + '/HeliosElection.sol:HeliosElection')
+    election_contract_abi = election_contract_compiled.get('abi')
+    election_contract = w3.eth.contract(address=election.contract_address, abi=election_contract_abi)
+
+    now = int(datetime.datetime.utcnow().strftime("%Y%m%d%H%M%S"))
+    # get time to uint
+    gas_estimate = election_contract.functions.vote(vote_hash_hex, now).estimateGas()
+    if gas_estimate < Web3.toWei('3', 'gwei'):
+      tx_hash = election_contract.functions.vote(vote_hash_hex, now).transact()
+      tx_hash_hex = tx_hash.hex()
+      tx_receipt = w3.eth.waitForTransactionReceipt(tx_hash)
+      print(tx_receipt)
+
     # don't store the vote in the voter's data structure until verification
     cast_vote.save()
 
@@ -782,10 +803,6 @@ def one_election_cast_done(request, election):
   user = get_user(request)
   voter = get_voter(request, user, election)
 
-  import json
-  election_contract = settings.COMPILE_ELECTION_CONTRACT.get(settings.CONTRACTS_DIR + '/HeliosElection.sol:HeliosElection')
-  election_contract_abi_json = json.dumps(election_contract.get('abi'))
-
   if voter:
     votes = CastVote.get_by_voter(voter)
     vote_hash = votes[0].vote_hash
@@ -813,16 +830,11 @@ def one_election_cast_done(request, election):
   # from remote systems, just in case, i.e. CAS
   # if logout:
   #   auth_views.do_local_logout(request)
-  
-  vote_hash_repadding = vote_hash
-  vote_hash_repadding += "=" * ((4 - len(vote_hash) % 4) % 4)
 
   # remote logout is happening asynchronously in an iframe to be modular given the logout mechanism
   # include_user is set to False if logout is happening
-  return render_template(request, 'cast_done', {'election': election, 
-                                                'election_contract_abi': election_contract_abi_json,
+  return render_template(request, 'cast_done', {'election': election,
                                                 'go_vote_url': get_election_govote_url(election),
-                                                'vote_hash_hex': base64.b64decode(vote_hash_repadding).hex(),
                                                 'vote_hash': vote_hash, 'logout': logout},
                          include_user=(not logout))
 

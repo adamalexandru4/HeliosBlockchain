@@ -33,10 +33,10 @@
     {% if elections|length %}
     <p>
       {% for election in elections %}
-      <div class="panel">
+      <div class="panel" style="margin-bottom: 0px;">
         <a style="font-size: 1.4em;" href="{% url "election-shortcut" election.short_name %}">{{election.name}}</a>{% if settings.SHOW_USER_INFO %}<br /> by {{election.admin.display_html_small|safe}}{% endif %}
       </div>
-      <br />
+      <br>
       {% endfor %}
     </p>
     {% endif %}
@@ -53,7 +53,7 @@
     <hr>
     <div class="col-12">
       <h5 class="subheader">Administration</h5>
-      <div class="row" style="overflow-y: auto; max-height: 100px;">
+      <div class="row" style="overflow-y: auto; max-height: 105px;">
         {% if elections_administered %}
         <ul>
         {% for election in elections_administered %}
@@ -73,7 +73,7 @@
     <hr>
     <div class="col-12">
       <h5 class="subheader">Recent Votes</h5>
-      <div class="row" style="overflow-y: auto; max-height: 100px;">
+      <div class="row" style="overflow-y: auto; max-height: 105px;">
         {% if elections_voted %}
         <ul>
         {% for election in elections_voted %}

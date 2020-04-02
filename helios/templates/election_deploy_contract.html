@@ -1,12 +1,20 @@
 {% extends TEMPLATE_BASE %}
 
   {% block extra-head %}
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+<!-- <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous"> -->
 <link rel="stylesheet" href="/static/wizard/css/jquery.steps.css" />
 <link href="/static/wizard/css/font-awesome-all.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
     <script src="/static/wizard/js/jquery.steps.js"></script>
     
+    <style>
+      .row {
+        max-width: none;
+        margin-right: unset;
+        margin-left: unset;
+      }
+    </style>
+
   {% endblock %}
 
 {% block content %}
@@ -144,7 +152,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
   </section>
   <h3>Add election public key</h3>
   <section class="container">
-    <div class="row justify-content-center pt-5 pb-3">
+    <div class="row justify-content-center pb-3">
       <i class="fas fa-key fa-5x" style="color: #2184be;"></i>
     </div>
     <div class="row justify-content-center">
@@ -284,6 +292,12 @@ Registration for your election is currently <b>closed</b>, which means only the 
                   console.log('Transaction Hash :', transactionHash);
                   transactionHashFinal = transactionHash;
                   $("#transaction-hash").val(transactionHash);
+
+                  $("#before-deploy").hide();
+                  $("#before-deploy-button").hide();
+                  $("#after-deploy").show();
+                  $("#smart-contract-address").val("Not deployed yet..");
+
               }).on('confirmation', () => {}).then((newContractInstance) => {
                   console.log('Deployed Contract Address : ', newContractInstance.options.address);
                   $.ajax({
@@ -300,9 +314,6 @@ Registration for your election is currently <b>closed</b>, which means only the 
                         var nextButton = $(".actions ul li:nth-child(2) a");
                         buttonEnabled = $(".actions ul li:nth-child(2)").removeClass("disabled").attr("aria-disabled", "false");
 
-                        $("#before-deploy").hide();
-                        $("#before-deploy-button").hide();
-                        $("#after-deploy").show();
                         $("#smart-contract-address").val(newContractInstance.options.address);
                         contractDeployed = true;
                         electionContractAddress = newContractInstance.options.address;
@@ -490,7 +501,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
 <br /><br />
 {% endblock %}
 
-{% block end-js %}
+<!-- {% block end-js %}
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
-{% endblock %}
+{% endblock %} -->

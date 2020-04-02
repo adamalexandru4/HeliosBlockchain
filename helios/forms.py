@@ -17,12 +17,12 @@ from django.forms.widgets import SelectDateWidget
 class ElectionForm(forms.Form):
   short_name = forms.SlugField(max_length=40, help_text='no spaces, will be part of the URL for your election, e.g. my-club-2010')
   name = forms.CharField(max_length=100, widget=forms.TextInput(attrs={'size':60}), help_text='the pretty name for your election, e.g. My Club 2010 Election')
-  description = forms.CharField(max_length=4000, widget=forms.Textarea(attrs={'cols': 70, 'wrap': 'soft'}), required=False)
-  election_type = forms.ChoiceField(label="type", choices = Election.ELECTION_TYPES)
+  description = forms.CharField(max_length=4000, widget=forms.Textarea(attrs={'cols': 70, 'rows': 2, 'wrap': 'soft'}), required=False)
+  election_type = forms.ChoiceField(label="Type", choices = Election.ELECTION_TYPES)
   use_voter_aliases = forms.BooleanField(required=False, initial=False, help_text='If selected, voter identities will be replaced with aliases, e.g. "V12", in the ballot tracking center')
   #use_advanced_audit_features = forms.BooleanField(required=False, initial=True, help_text='disable this only if you want a simple election with reduced security but a simpler user interface')
   randomize_answer_order = forms.BooleanField(required=False, initial=False, help_text='enable this if you want the answers to questions to appear in random order for each voter')
-  private_p = forms.BooleanField(required=False, initial=False, label="Private?", help_text='A private election is only visible to registered voters.')
+  private_p = forms.BooleanField(required=False, initial=False, label="Private election", help_text='A private election is only visible to registered voters.')
   help_email = forms.CharField(required=False, initial="", label="Help Email Address", help_text='An email address voters should contact if they need help.')
   
   if settings.ALLOW_ELECTION_INFO_URL:
@@ -33,6 +33,18 @@ class ElectionForm(forms.Form):
                                    widget=SplitSelectDateTimeWidget, required=False)
   voting_ends_at = SplitDateTimeField(help_text = 'UTC date and time when voting ends',
                                    widget=SplitSelectDateTimeWidget, required=False)
+
+  def clean(self):
+    cleaned_data = super().clean()
+    voting_starts_at_value = cleaned_data.get('voting_starts_at')
+    voting_ends_at_value = cleaned_data.get('voting_ends_at')
+
+    if (not voting_starts_at_value):
+      self.add_error('voting_starts_at', 'Starting date should be selected correctly')
+
+    if (not voting_ends_at_value ):
+      self.add_error('voting_ends_at', 'End date should be selected correctly')
+
 
 class ElectionTimeExtensionForm(forms.Form):
   voting_extended_until = SplitDateTimeField(help_text = 'UTC date and time voting extended to', widget=SplitSelectDateTimeWidget, required=False)
