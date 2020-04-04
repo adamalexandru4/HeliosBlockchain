@@ -3,19 +3,34 @@ export const question_markup =
 ${QUESTIONS.map(
   (question, index) =>
   `
-  <div id="q_view_${index}">
-    <h4>
-      ${
-        `${ADMIN_P}` ?
-        `
-        [
-          ${`${index} > 0 ` ? `<a href="javascript:question_move_up(${index});">^</a>]&nbsp;[` : ''}
-          <a onclick="return confirm('Are you sure you want to remove this question?');" href="javascript:question_remove(${index})">x</a>] [<a href="javascript:question_edit(${index})">edit</a>] 
-        `
-          : `''`
+  <div class="card bg-secondary mb-3" id="q_view_${index}">
+    <div class="card-header">
+    <div class="row" style="max-width: unset; margin-left: 0px; margin-right: 0px;">
+      <div class="col-md-9 col-sm-12" style="padding-left: 0px;">
+        <h4 style="margin-bottom: 0px;">
+          #${index + 1}. ${question.question}
+        </h4>
+      </div>
+      
+      ${ADMIN_P ?  
+      `<div class="col-md-3 col-sm-12" style="padding-right: 0px;">
+        <div class="d-flex justify-content-end">
+          ${index > 0 ? `<a class="btn btn-sm btn-primary mr-1" href="javascript:question_move_up(${index})">MOVE UP</a>` : ``}
+          <a class="btn btn-sm btn-info mr-1" href="javascript:question_edit(${index})">EDIT</a>
+          <a class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to remove this question?');" href="javascript:question_remove(${index})">DELETE</a>
+        </div>
+      </div>` : ``
       }
-      ${index + 1}. ${question.question} (${question.choice_type}, select between ${question.min} and ${`${question.max != null}` ? `${question.max}` : `unlimited`} answers, result type ${question.result_type}.)
-    </h4>
+    </div>
+    </div>
+    <div class="card-body">
+      <h4 class="card-title">(${question.choice_type}, select between ${question.min} and ${`${question.max != null}` ? `${question.max}` : `unlimited`} answers, result type ${question.result_type}.)</h4>
+      <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+    </div>
+  </div>
+
+
+  <div id="q_view_${index}">
     <ul>
       ${question.answers.map(
         (answer, index) =>

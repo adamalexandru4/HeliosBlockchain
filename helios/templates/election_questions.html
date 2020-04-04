@@ -2,8 +2,10 @@
 
 {% block title %}Questions for {{election.name}}{% endblock %}
 {% block content %}
-  <h3 class="title">{{election.name}} &mdash; Questions <span style="font-size:0.7em;">[<a href="{% url "one-election-view" election.uuid %}">back to election</a>]</span></h3>
-
+  <div class="d-flex justify-content-between" style="margin-bottom: 1rem;">
+    <h3 class="title">{{election.name}} &mdash; Questions </h3>
+    <a class="btn btn-primary" style="font-size: 1rem;" href="{% url "one-election-view" election.uuid %}">back to election</a>
+  </div>
   <script language="javascript">
 {% if election.questions %}
   QUESTIONS = JSON.parse("{{questions_json|escapejs}}");
@@ -18,11 +20,204 @@
 
   CSRF_TOKEN = '{{csrf_token}}';
 
-  async function refresh() {
-      const q_div = await import('/static/static_templates/question.js');
-      $("#questions").html(q_div.question_markup);
-<!--      $('#questions').processTemplate({'questions' : QUESTIONS, 'admin_p' : ADMIN_P});-->
+  function refresh() {
+      var question_div = `
+                    ${QUESTIONS.map(
+                      (question, index) =>
+                      `
+                      <div class="card bg-secondary mb-3" id="q_view_${index}">
+                        <div class="card-header">
+                        <div class="row" style="max-width: unset; margin-left: 0px; margin-right: 0px;">
+                          <div class="col-md-9 col-sm-12" style="padding-left: 0px;">
+                            <h4 style="margin-bottom: 0px;">
+                              #${index + 1}. ${question.question}
+                            </h4>
+                          </div>
+                          
+                          ${ADMIN_P ?  
+                          `<div class="col-md-3 col-sm-12" style="padding-right: 0px;">
+                            <div class="d-flex justify-content-end">
+                              ${index > 0 ? `<a class="btn btn-sm btn-primary mr-1" style="font-size: 0.65rem;" href="javascript:question_move_up(${index})">MOVE UP</a>` : ``}
+                              <a class="btn btn-sm btn-info mr-1" style="font-size: 0.7rem;" href="javascript:question_edit(${index})">EDIT</a>
+                              <a class="btn btn-sm btn-danger" style="font-size: 0.7rem;" onclick="return confirm('Are you sure you want to remove this question?');" href="javascript:question_remove(${index})">DELETE</a>
+                            </div>
+                          </div>` : ``
+                          }
+                        </div>
+                        </div>                        
+                        <div class="card-body" style="padding-bottom: 0px;">
+                          <h4 class="card-title">
+                            <!-- <span class="badge badge-info">${question.choice_type}</span>  -->
+                            <span class="badge badge-info">select between</span><span class="badge badge-info">${question.min} and ${`${question.max != null}` ? `${question.max}` : `unlimited`} answers</span>
+                            <span class="badge badge-info">result type ${question.result_type}</span>
+                          </h4>
+                          <div id="q_view_${index}">
+                            <ul>
+                              ${question.answers.map(
+                                (answer, index) => 
+                                `
+                                <li style="font-size: 1rem; font-weight: bold;"> ${answer}
+                                ${question.answer_urls[index] ?
+                                  `<a target="_new" class="badge badge-primary" style="margin-left: 0.3rem;" href="${question.answer_urls[index]}">MORE</a>` : ``
+                                }
+                                </li>
+                                `
+                              ).join('')}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
 
+                      <div id="q_edit_${index}" style="display:none;"> 
+                        <div class="card">
+                          <div class="card-header">
+                            <h4>#${index + 1}.</h4>
+                          </div>
+                          <div class="card-body" style="padding-top: 0px;">
+                          <form id="question_edit_${index}_form" onsubmit="question_update(${index}, this); return false;" action="#">
+                            <p>
+                            <input type="hidden" name="choice_type" value="approval" />
+                            <div class="row" style="margin-bottom: 1rem; margin-left: 0.4rem;">
+                              <h6 style="padding-top: 1rem; margin-right: 1rem;">Select between</h6>
+                              <div class="form-group">
+                                <select name="min" class="form-control" style="width: 5rem;">
+                                  <option selected>0</option>
+                                  ${Array(20).fill().map( (item, idx) =>
+                                    ` <option>${idx + 1}</option>`
+                                    )}
+                                </select>
+                              </div>
+                              <h6 style="padding-top: 1rem; margin-left: 1rem; margin-right: 1rem;">and</h6>
+
+                              <div class="form-group">
+                                <select name="max" class="form-control" style="width: 5rem;">
+                                  <option>0</option>
+                                  <option selected>1</option>
+
+                                  ${Array(49).fill().map( (item, idx) =>
+                                  ` <option>${idx + 2}</option>`
+                                  )}
+
+                                  <option value="">- (approval)</option>
+                                </select>
+                              </div>
+
+                              <h6 style="padding-top: 1rem; margin-left: 1rem;">answers.</h6>
+                            </div>
+                            
+                            <div class="row" style="margin-bottom: 1rem; margin-left: 0.4rem;">
+                              <h6 style="padding-top: 1rem; margin-right: 1rem;">Result Type</h6>
+                              <select name="result_type" class="form-control" style="width: 10rem;">
+                                  <option selected>absolute</option>
+                                  <option>relative</option>
+                              </select>
+                            </div>
+
+                            </p>
+
+                            <table id="answer_table_${index}" class="table" style="font-size: 1rem;">
+                              <tbody>
+                                <tr>
+                                  <th colspan="2" style="padding-top: 2.3rem;">
+                                    <h6>Question:</h6>
+                                  </th>
+                                  <td style="padding: 1rem;">
+                                    <div class="input-group">
+                                      <input type="text" class="form-control" name="question" size="70" style="font-size: 1rem;" />
+                                    </div>
+                                  </td>
+                                </tr>
+                              </tbody>
+                              <tfoot>
+                                <tr><th colspan="2"></th><th><a class="btn btn-primary btn-sm" href="javascript:add_answers(document.getElementById('answer_table_${index}'),5)">add 5 more answers</a></th></tr>
+                              </tfoot>
+                            </table>
+                            <div class="d-flex justify-content-end">
+                              <input class="btn btn-success btn-sm" type="submit" style="font-size: 0.7rem;" value="update question" /> &nbsp; <input style="font-size: 0.7rem;" class="btn btn-danger btn-sm" type="reset" value="cancel" onclick="question_edit_cancel(${index});" />
+                            </div>
+                          </form>
+                          </div>
+                        </div>
+                      </div>
+                    `
+                    ).join('')}
+                    ${QUESTIONS.length == 0 ? `no questions yet` : ''}
+                    ${ADMIN_P ?
+                    ` <hr>
+                      <div class="card">
+                        <div class="card-header">
+                        <h4>Add a Question:</h4>
+                        </div>
+                        <div class="card-body">
+                          <form id="question_form" onsubmit="question_add(this); return false;" action="#">
+                            <input type="hidden" name="choice_type" value="approval" />
+                            <div class="row" style="margin-bottom: 1rem; margin-left: 0.4rem;">
+                              <h6 style="padding-top: 1rem; margin-right: 1rem;">Select between</h6>
+                              <div class="form-group">
+                                <select name="min" class="form-control" style="width: 5rem;">
+                                  <option selected>0</option>
+                                  ${Array(20).fill().map( (item, idx) =>
+                                    ` <option>${idx + 1}</option>`
+                                    )}
+                                </select>
+                              </div>
+                              <h6 style="padding-top: 1rem; margin-left: 1rem; margin-right: 1rem;">and</h6>
+
+                              <div class="form-group">
+                                <select name="max" class="form-control" style="width: 5rem;">
+                                  <option>0</option>
+                                  <option selected>1</option>
+
+                                  ${Array(49).fill().map( (item, idx) =>
+                                  ` <option>${idx + 2}</option>`
+                                  )}
+
+                                  <option value="">- (approval)</option>
+                                </select>
+                              </div>
+
+                              <h6 style="padding-top: 1rem; margin-left: 1rem;">answers.</h6>
+                            </div>
+                            
+                            <div class="row" style="margin-bottom: 1rem; margin-left: 0.4rem;">
+                              <h6 style="padding-top: 1rem; margin-right: 1rem;">Result Type</h6>
+                              <select name="result_type" class="form-control" style="width: 10rem;">
+                                  <option selected>absolute</option>
+                                  <option>relative</option>
+                              </select>
+                            </div>
+                            
+                            </p>
+
+                            <table id="answer_table" style="width:100%; font-size: 1rem;">
+                              <tbody>
+                                <tr>
+                                  <th colspan="2" style="padding-top: 1rem;">
+                                    <h6>Question</h6>
+                                  </th>
+                                  <td style="padding: 1rem;">
+                                    <div class="input-group">
+                                      <input type="text" class="form-control" name="question" size="70" style="font-size: 1rem;" />
+                                    </div>
+                                  </td>
+                                </tr>
+                              </tbody>
+                              <tfoot>
+                                <tr><th colspan="2"></th><th><a class="btn btn-primary btn-sm" style="margin-top: 0.5rem; margin-bottom: 0.5rem;" href="javascript:add_answers(document.getElementById('answer_table'), 5)">add 5 more answers</a></th></tr>
+                              </tfoot>
+
+                            </table>
+                            <div class="d-flex justify-content-end">
+                              <input class="btn btn-primary btn-sm" type="submit" style="font-size: 1rem;" value="add question" /> 
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    `
+                    : `` }
+                    `;
+
+      $("#questions").html(question_div);
       add_answers($('#answer_table'),DEFAULT_NUM_ANSWERS);
  }
 
@@ -118,7 +313,7 @@
   function add_answer(el) {
     el = $(el);
     var num_answers = el.find('input.answer').length + 1;
-    el.find('tbody').append('<tr><th>&nbsp;&nbsp;&nbsp;</th><th>Answer #' + num_answers + '</th><td><input type="text" class="answer" name="answer_' + num_answers + '" size="70" /><br /><nobr>Link (optional, <tt>http</tt> or <tt>https</tt> only): <input type="url" name="answer_url_' + num_answers + '" width="50%" /></nobr></td></tr>');
+    el.find('tbody').append('<tr><th colspan="2"><h6 style="padding-top: 0.5rem;">Answer #' + num_answers + '</h6></th><td style="padding: 1rem;"><input type="text" style="font-size: 1rem;" class="answer" name="answer_' + num_answers + '" size="70" /><br /><nobr>Link (optional, <tt>http</tt> or <tt>https</tt> only): <input type="url" style="font-size: 1rem;" name="answer_url_' + num_answers + '" width="50%" /></nobr></td></tr>');
   }
 
   function add_answers(el, num) {
@@ -135,8 +330,8 @@
 
   $(document).ready(async function() {
       // $('#questions').setTemplateURL("/static/helios/static_templates/question.html");
-      const q_div = await import('/static/static_templates/question.js');
-      $("#questions").html(q_div.question_markup);
+      // const q_div = await import('/static/static_templates/question.js');
+      // $("#questions").html(q_div.question_markup);
 
       refresh();
   });
