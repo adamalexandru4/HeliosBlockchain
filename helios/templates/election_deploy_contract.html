@@ -133,9 +133,9 @@ Registration for your election is currently <b>closed</b>, which means only the 
         <thead>
           <tr>
             <th scope="col">#</th>
-            <th scope="col">First</th>
-            <th scope="col">Last</th>
-            <th scope="col">Handle</th>
+            <th scope="col">UUID</th>
+            <th scope="col">Name</th>
+            <th scope="col"></th>
           </tr>
         </thead>
         <tbody>
@@ -260,9 +260,11 @@ Registration for your election is currently <b>closed</b>, which means only the 
 
            electionContract.methods.pubKey().call({ from: currentAccount})
             .then((result) => {
-                console.log(result);
-                $("#set-public-key").hide();
-                $("#public-key-setted").show();
+                if(result != web3.utils.isAddress(result)) {
+                  console.log(result);
+                  $("#set-public-key").hide();
+                  $("#public-key-setted").show();
+                }
 
             });
         } else {
@@ -365,7 +367,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
                         if (data.message) {
                           $("#set-public-key").hide();
                           $("#public-key-setted").show();
-                          $("#pub-key-transaction").val("0x" + transactionHash);
+                          $("#pub-key-transaction").val(transactionHash);
                         } else if(data.error) {
                           alert("Transaction hash not registered");
                           console.log(data.error);
@@ -468,11 +470,11 @@ Registration for your election is currently <b>closed</b>, which means only the 
               if(currentIndex === 1 && newIndex === 2 && noQuestionsAdded != {{ election.questions|length }})
                   return false;
 
-              if(currentIndex === 2 && newIndex === 3)
-                if(publicElection)
-                  return true;
-                else if(electionVotersAdded == false)
-                      return false;
+<!--              if(currentIndex === 2 && newIndex === 3)-->
+<!--                if(publicElection)-->
+<!--                  return true;-->
+<!--                else if(electionVotersAdded == false)-->
+<!--                      return false;-->
 
               console.log("new");
               return true;
@@ -482,7 +484,8 @@ Registration for your election is currently <b>closed</b>, which means only the 
               console.log("changed");
           },
           onFinishing: function (event, currentIndex) {
-              if(contractDeployed && noQuestionsAdded == {{ election.questions|length }} && publicElection) {
+              if(contractDeployed && noQuestionsAdded == {{ election.questions|length }}) {
+<!--               && publicElection) {-->
                 var form = $('<form action="{% url "one-election-final-freeze" election.uuid %}" method="post" style="display: none;"/>');
                 $('body').append(form);
                 form.submit();

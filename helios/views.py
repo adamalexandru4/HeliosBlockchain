@@ -912,7 +912,7 @@ def one_election_audited_ballots(request, election):
   return render_template(request, 'election_audited_ballots', {'election': election, 'audited_ballots': audited_ballots, 'next_after': next_after,
                 'offset': offset, 'limit': limit, 'offset_plus_one': offset+1, 'offset_plus_limit': offset+limit})
 
-@election_admin()
+@election_admin(frozen=False)
 def voter_delete(request, election, voter_uuid):
   """
   Two conditions under which a voter can be deleted:
@@ -1466,7 +1466,7 @@ def voters_eligibility(request, election):
   election.save()
   return HttpResponseRedirect(settings.SECURE_URL_HOST + reverse(voters_list_pretty, args=[election.uuid]))
   
-@election_admin()
+@election_admin(frozen=False)
 def voters_upload(request, election):
   """
   Upload a CSV of password-based voters with
@@ -1515,7 +1515,7 @@ def voters_upload(request, election):
       else:
         return HttpResponseRedirect("%s?%s" % (settings.SECURE_URL_HOST + reverse(voters_upload, args=[election.uuid]), urllib.parse.urlencode({'e':'no voter file specified, try again'})))
 
-@election_admin()
+@election_admin(frozen=False)
 def voters_upload_cancel(request, election):
   """
   cancel upload of CSV file

@@ -89,7 +89,7 @@ ${QUESTIONS.map(
 `
 ).join('')}
 ${QUESTIONS.length == 0 ? `no questions yet` : ''}
-${`${ADMIN_P} ` ?
+${ADMIN_P ?
 `
   <h4>Add a Question:</h4>
   <form id="question_form" onsubmit="question_add(this); return false;" action="#">
@@ -148,5 +148,5 @@ ${`${ADMIN_P} ` ?
     </table>
   </form>
 `
-: `''` }
+: `` }
 `;
