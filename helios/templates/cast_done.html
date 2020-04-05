@@ -42,34 +42,17 @@
       {% endif %}
     <div class="row justify-content-center pt-1">
       <div class="col-12 text-center">
-      <p class="font-weight-bold" style="color: red;">Tracker is converted to HEXADECIMAL value for reduced gas cost</p>
+      <p class="font-weight-bold" style="color: red;">Your UUID is converted to HEXADECIMAL value for reduced gas cost</p>
       </div>
       <div class="col-10">
-        <input class="form-control form-control-lg" style="background-color: white; font-size: 1.25rem; text-align: center;" type="text" value="0x{{vote_hash_hex}}" readonly="">
+        <input class="form-control form-control-lg" style="background-color: white; font-size: 1.25rem; text-align: center;" type="text" value="{{voter_uuid_hex}}" readonly="">
       </div>
     </div>
-    
-    <hr class="my-4">
 
-    <div class="row justify-content-center" id="error-eth-cast" style="display: none;">
-      <p class="font-weight-bold" style="color: red" id="error-eth-cast-message"></p>
-    </div>
-    <div id="succes-eth-cast" style="display: block;">
-      <div class="row justify-content-center">
-        <div class="col-4 text-center" style="padding-top: 0.3rem;">
-          <div class="row ">
-            <span class="fas fa-hashtag pr-2 pt-1" style="padding-left: 4em;"></span>
-            <p class="font-weight-bold badge-success" style="font-size: 1rem;">Transaction hash</p>
-          </div>
-        </div>
-        <div class="col-6">
-          <input class="form-control form-control-lg" id="succes-eth-cast-tx" value={{vote_hash}} style="background-color: white;text-align: center; font-size: 1rem;" type="text" readonly="">
-        </div>
-      </div>
-      <div class="row justify-content-center">
-        <a class="btn btn-info" href="{% url "one-election-view" election.uuid %}">return to election info</a>
-      </div>
-    </div>
+    <hr class="my-4">
+  <div class="row justify-content-center">
+    <a class="btn btn-info" href="{% url "one-election-view" election.uuid %}">return to election info</a>
+  </div>
   </div>
 {% endblock %}
 

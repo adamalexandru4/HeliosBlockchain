@@ -15,9 +15,9 @@ from django.conf import settings
 from Crypto import Random
 
 @shared_task()
-def cast_vote_verify_and_store(cast_vote_id, status_update_message=None, **kwargs):
+def cast_vote_verify_and_store(cast_vote_id, election_contract_address, election_contract_abi, status_update_message=None, **kwargs):
     cast_vote = CastVote.objects.get(id = cast_vote_id)
-    result = cast_vote.verify_and_store()
+    result = cast_vote.verify_and_store(election_contract_address, election_contract_abi)
 
     voter = cast_vote.voter
     election = voter.election

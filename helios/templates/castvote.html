@@ -12,6 +12,9 @@ by <b><u>
 {{the_voter.name}}
 {% endif %}
 </u></b>
+<br />
+Transaction Hash: <b>{{cast_vote.tx_hash}}</b><br />
+Voter UUID HEX: <b>{{voter_uuid_hex}}</b><br />
 <br /><br />
 <a href="#" onclick="document.getElementById('castvote_content').setAttribute('style', 'display: block;'); return false;">details</a><br /><br />
 <div style="display:none;" id="castvote_content">

@@ -49,7 +49,7 @@ from django.apps import apps
 from .ethereum.interface import ContractInterface
 from web3 import Web3, HTTPProvider
 w3 = Web3(HTTPProvider('http://127.0.0.1:8545'))
-w3.eth.defaultAccount = w3.eth.accounts[2]
+w3.eth.defaultAccount = w3.eth.accounts[0]
 
 Election = apps.get_model('helios', 'Election')
 QuestionBlockchain = apps.get_model('helios', 'QuestionBlockchain')
@@ -155,7 +155,12 @@ def election_vote_shortcut(request, election_short_name):
 
 @election_view()
 def _castvote_shortcut_by_election(request, election, cast_vote):
-  return render_template(request, 'castvote', {'cast_vote' : cast_vote, 'vote_content': cast_vote.vote.toJSON(), 'the_voter': cast_vote.voter, 'election': election})
+
+  return render_template(request, 'castvote', {'cast_vote' : cast_vote,
+                                               'vote_content': cast_vote.vote.toJSON(),
+                                               'the_voter': cast_vote.voter,
+                                               'voter_uuid_hex': Web3.toHex(text=cast_vote.voter.uuid.replace("-","")),
+                                               'election': election})
   
 def castvote_shortcut(request, vote_tinyhash):
   try:
@@ -756,24 +761,6 @@ def one_election_cast_confirm(request, election):
     if not voter:
       return HttpResponseRedirect(settings.SECURE_URL_HOST + reverse(one_election_cast_confirm, args=[election.uuid]))
 
-    # send transaction with the vote
-    vote_hash_repadding = vote_fingerprint
-    vote_hash_repadding += "=" * ((4 - len(vote_fingerprint) % 4) % 4)
-    vote_hash_hex = base64.b64decode(vote_hash_repadding).hex()
-
-    election_contract_compiled = settings.COMPILE_ELECTION_CONTRACT.get(settings.CONTRACTS_DIR + '/HeliosElection.sol:HeliosElection')
-    election_contract_abi = election_contract_compiled.get('abi')
-    election_contract = w3.eth.contract(address=election.contract_address, abi=election_contract_abi)
-
-    now = int(datetime.datetime.utcnow().strftime("%Y%m%d%H%M%S"))
-    # get time to uint
-    gas_estimate = election_contract.functions.vote(vote_hash_hex, now).estimateGas()
-    if gas_estimate < Web3.toWei('3', 'gwei'):
-      tx_hash = election_contract.functions.vote(vote_hash_hex, now).transact()
-      tx_hash_hex = tx_hash.hex()
-      tx_receipt = w3.eth.waitForTransactionReceipt(tx_hash)
-      print(tx_receipt)
-
     # don't store the vote in the voter's data structure until verification
     cast_vote.save()
 
@@ -783,9 +770,15 @@ def one_election_cast_confirm(request, election):
     else:
       status_update_message = None
 
+    election_contract_compiled = settings.COMPILE_ELECTION_CONTRACT.get(
+      settings.CONTRACTS_DIR + '/HeliosElection.sol:HeliosElection')
+    election_contract_abi = election_contract_compiled.get('abi')
+
     # launch the verification task
     tasks.cast_vote_verify_and_store.delay(
       cast_vote_id = cast_vote.id,
+      election_contract_address = election.contract_address,
+      election_contract_abi = election_contract_abi,
       status_update_message = status_update_message)
 
     # remove the vote from the store
@@ -807,6 +800,7 @@ def one_election_cast_done(request, election):
     votes = CastVote.get_by_voter(voter)
     vote_hash = votes[0].vote_hash
     cv_url = get_castvote_url(votes[0])
+    voter_uuid_hex = Web3.toHex(text=voter.uuid.replace("-",""))
 
     # only log out if the setting says so *and* we're dealing
     # with a site-wide voter. Definitely remove current_voter
@@ -817,11 +811,14 @@ def one_election_cast_done(request, election):
       logout = False
       del request.session['CURRENT_VOTER_ID']
 
+
     save_in_session_across_logouts(request, 'last_vote_hash', vote_hash)
+    save_in_session_across_logouts(request, 'voter_uuid_hex', voter_uuid_hex)
     save_in_session_across_logouts(request, 'last_vote_cv_url', cv_url)
   else:
     vote_hash = request.session['last_vote_hash']
     cv_url = request.session['last_vote_cv_url']
+    voter_uuid_hex = request.session['voter_uuid_hex']
     logout = False
   
   # local logout ensures that there's no more
@@ -834,6 +831,7 @@ def one_election_cast_done(request, election):
   # remote logout is happening asynchronously in an iframe to be modular given the logout mechanism
   # include_user is set to False if logout is happening
   return render_template(request, 'cast_done', {'election': election,
+                                                'voter_uuid_hex': voter_uuid_hex,
                                                 'go_vote_url': get_election_govote_url(election),
                                                 'vote_hash': vote_hash, 'logout': logout},
                          include_user=(not logout))
@@ -1199,7 +1197,7 @@ def one_election_deploy_contract(request, election):
                         'questions': json.dumps(election.questions),
                         'questions_blockchain': json.dumps(questions_blockchain),
                         'issues_p' : len(issues) > 0,
-
+                        'server_node_address': settings.SERVER_NODE_ADDRESS,
                         'voters_page': voters_page,
                         'voters': voters_page.object_list,
                         'total_voters': total_voters})
@@ -1210,6 +1208,7 @@ def one_election_deploy_contract(request, election):
                                                                  'contract_already_deployed': 'true' if election.contract_address else 'false',
                                                                  'election_contract_bytecode': election_contract_bytecode,
                                                                  'election_contract_abi': election_contract_abi_json,
+                                                                 'server_node_address': settings.SERVER_NODE_ADDRESS,
                                                                  'questions': json.dumps(election.questions),
                                                                  'questions_blockchain': json.dumps(questions_blockchain),
                                                                  'issues_p' : len(issues) > 0})

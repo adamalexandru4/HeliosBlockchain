@@ -39,6 +39,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
         <p class="pl-5 pt-1">Election name</p>
         <p class="pl-5 pt-1">Election URL</p>
         <p class="pl-5 pt-1">Your ETH address</p>
+        <p class="pl-5 pt-1">Server node address</p>
         <p class="pl-5 pt-1">Created at</p>
         <p class="pl-5 pt-1">Vote starts at</p>
         <p class="pl-5 pt-1">Vote ends at</p>
@@ -47,6 +48,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
         <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="election-name" value="{{election.name}}">
         <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="election-url" value="{{election.cast_url}}">
         <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="owner-address" value="Please connect with MetaMask account">
+        <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="server-node-address" value="{{server_node_address}}">
         <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="created-at" value="{{election.created_at}}">
         <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="starts-at" value="{{election.voting_starts_at}}">
         <input type="text" readonly="" class="form-control-plaintext col-sm-12" id="ends-at" value="{{election.voting_ends_at}}">
@@ -188,6 +190,8 @@ Registration for your election is currently <b>closed</b>, which means only the 
     const election_abi = JSON.parse(" {{ election_contract_abi|escapejs }}" );
     const election_bytecode = "{{ election_contract_bytecode }}";
 
+    var accounts, currentAccount;
+
     var electionContract;
     var electionContractAddress;
     var questions = {{ questions | safe }};
@@ -205,7 +209,6 @@ Registration for your election is currently <b>closed</b>, which means only the 
           throw new Error('Please install MetaMask.')
         }
 
-        var accounts, currentAccount;
         if (window.ethereum) {
           window.web3 = new Web3(ethereum);
           try {
@@ -227,6 +230,9 @@ Registration for your election is currently <b>closed</b>, which means only the 
             currentAccount = accounts[0];
           }
         }
+
+
+        disableFinishButton = $(".actions ul li:nth-child(3)").addClass("disabled").attr("aria-disabled", "true");
 
         if({{ contract_already_deployed }}) {
           nextButton = $(".actions ul li:nth-child(2) a");
@@ -264,6 +270,8 @@ Registration for your election is currently <b>closed</b>, which means only the 
                   console.log(result);
                   $("#set-public-key").hide();
                   $("#public-key-setted").show();
+                  $(".actions ul li:nth-child(3)").removeClass("disabled").attr("aria-disabled", "false");
+
                 }
 
             });
@@ -277,7 +285,8 @@ Registration for your election is currently <b>closed</b>, which means only the 
             try {
               let payload = {
                   data: election_bytecode,
-                  arguments: ["{{election.name}}", web3.utils.asciiToHex("{{election.short_name}}"), created_date_uint, created_date_uint, created_date_uint]
+                  arguments: ["{{election.name}}", web3.utils.asciiToHex("{{election.short_name}}"),
+                                created_date_uint, created_date_uint, created_date_uint, "{{server_node_address}}"]
               }
               electionContract = new web3.eth.Contract(election_abi);
               const estimatedGas = await electionContract.deploy(payload).estimateGas();
@@ -377,6 +386,9 @@ Registration for your election is currently <b>closed</b>, which means only the 
                         console.log("Error " + textStatus);
                       }
                 });
+                
+                enableFinishButton = $(".actions ul li:nth-child(3)").removeClass("disabled").attr("aria-disabled", "false");
+
              });
 
         });
@@ -447,9 +459,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
         });
 
     });
-    </script>
 
-    <script>
       var wizard = $("#example-async");
 
       wizard.steps({
@@ -458,7 +468,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
           transitionEffect: "slide",
           transitionEffectSpeed: 150,
           labels: {
-              finish: 'Finish <i class="fa fa-chevron-right"></i>',
+              finish: 'Freeze <i class="fa fa-chevron-right"></i>',
               next: 'Next <i class="fa fa-chevron-right"></i>',
               previous: '<i class="fa fa-chevron-left"></i> Previous'
           },
@@ -475,7 +485,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
 <!--                  return true;-->
 <!--                else if(electionVotersAdded == false)-->
 <!--                      return false;-->
-
+    
               console.log("new");
               return true;
           },
@@ -484,15 +494,26 @@ Registration for your election is currently <b>closed</b>, which means only the 
               console.log("changed");
           },
           onFinishing: function (event, currentIndex) {
-              if(contractDeployed && noQuestionsAdded == {{ election.questions|length }}) {
-<!--               && publicElection) {-->
-                var form = $('<form action="{% url "one-election-final-freeze" election.uuid %}" method="post" style="display: none;"/>');
-                $('body').append(form);
-                form.submit();
-                return true;
-               }
+              if(contractDeployed && noQuestionsAdded == {{ election.questions|length }}
+                && (publicElection || electionVotersAdded)) {
 
-              return false;
+                var myContract = new web3.eth.Contract(election_abi, electionContractAddress, {
+                                              from: currentAccount,
+                                              gasPrice: web3.utils.toHex(web3.utils.toWei('3', 'gwei'))
+                                          });
+
+                myContract.methods.freezeTheElection()
+                  .send({from: currentAccount})
+                  .on('error', function(error, receipt) {
+                      alert('Freezing election key failed, try again.');
+                      return false;
+                  }).on('transactionHash', function(transactionHash){
+                    var form = $(`<form action="{% url "one-election-final-freeze" election.uuid %}" method="post" style="display: none;"/>`);
+                    $('body').append(form);
+                    form.submit();
+                  });
+                  return true;
+               }
           },
           onFinished: function (event, currentIndex)
           {

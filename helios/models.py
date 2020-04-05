@@ -867,6 +867,7 @@ class Voter(HeliosModel):
                        null=True)
   vote_hash = models.CharField(max_length = 100, null=True)
   cast_at = models.DateTimeField(auto_now_add=False, null=True)
+  tx_hash = models.CharField(max_length = 100, null = True)
 
   class Meta(object):
     unique_together = (('election', 'voter_login_id'))
@@ -882,6 +883,7 @@ class Voter(HeliosModel):
   @transaction.atomic
   def register_user_in_election(cls, user, election):
     voter_uuid = str(uuid.uuid4())
+
     voter = Voter(uuid= voter_uuid, user = user, election = election)
 
     # do we need to generate an alias?
@@ -1028,6 +1030,7 @@ class Voter(HeliosModel):
     self.vote = cast_vote.vote
     self.vote_hash = cast_vote.vote_hash
     self.cast_at = cast_vote.cast_at
+    self.tx_hash = cast_vote.tx_hash
     self.save()
   
   def last_cast_vote(self):
@@ -1058,6 +1061,9 @@ class CastVote(HeliosModel):
   
   # auditing purposes, like too many votes from the same IP, if it isn't expected
   cast_ip = models.GenericIPAddressField(null=True)
+
+  # blockchain log
+  tx_hash = models.CharField(max_length=100, null=True)
 
   @property
   def datatype(self):
@@ -1106,7 +1112,12 @@ class CastVote(HeliosModel):
   def get_by_voter(cls, voter):
     return cls.objects.filter(voter = voter).order_by('-cast_at')
 
-  def verify_and_store(self):
+  def verify_and_store(self, election_contract_address, election_contract_abi):
+
+    import base64
+    from web3 import Web3, HTTPProvider
+    w3 = Web3(HTTPProvider('http://127.0.0.1:8545'))
+
     # if it's quarantined, don't let this go through
     if self.is_quarantined:
       raise Exception("cast vote is quarantined, verification and storage is delayed.")
@@ -1115,6 +1126,26 @@ class CastVote(HeliosModel):
 
     if result:
       self.verified_at = datetime.datetime.utcnow()
+
+      # send transaction with the vote valided
+      vote_hash_repadding = self.vote_hash
+      vote_hash_repadding += "=" * ((4 - len(self.vote_hash) % 4) % 4)
+      vote_hash = base64.b64decode(vote_hash_repadding)
+
+      election_contract = w3.eth.contract(address=election_contract_address, abi=election_contract_abi)
+
+      cast_at_int = int(self.cast_at.timestamp())
+      verified_at_int = int(self.verified_at.timestamp())
+      uuid_hex = Web3.toHex(self.voter.uuid.replace("-", "").encode("utf-8"))
+      vote_hash_hex = Web3.toHex(vote_hash)
+
+      gas_estimate = election_contract.functions.vote(uuid_hex, vote_hash_hex, cast_at_int, verified_at_int).estimateGas(
+        {'from': w3.eth.accounts[2]})
+      if gas_estimate < Web3.toWei('3', 'gwei'):
+        tx_hash_hex = election_contract.functions.vote(uuid_hex, vote_hash_hex, cast_at_int, verified_at_int).transact(
+          {'from': w3.eth.accounts[2]}).hex()
+        self.tx_hash = tx_hash_hex
+
     else:
       self.invalidated_at = datetime.datetime.utcnow()
       

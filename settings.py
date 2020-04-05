@@ -233,8 +233,7 @@ TEMPLATES = [
 # although not all choices may be available on all operating systems.
 # If running in a Windows environment this must be set to the same as your
 # system time zone.
-# TIME_ZONE = 'America/Los_Angeles'
-TIME_ZONE = 'Pacific/Auckland'
+TIME_ZONE = 'America/Los_Angeles'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
@@ -427,6 +426,8 @@ from web3 import Web3, HTTPProvider
 from helios.ethereum.interface import ContractInterface
 
 w3 = Web3(HTTPProvider('http://127.0.0.1:8545'))
+SERVER_NODE_ADDRESS = w3.eth.accounts[2]
+
 CONTRACTS_DIR = os.path.abspath(os.getcwd() + '/helios/ethereum/contracts/')
 HELIOS_ADMINISTRATOR_CONTRACT_INTERFACE = ContractInterface(w3, 'HeliosAdministrator', CONTRACTS_DIR)
 HELIOS_ADMINISTRATOR_CONTRACT_INSTANCE = None
