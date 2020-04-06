@@ -28,7 +28,8 @@ urlpatterns = [
     re_path(r'^final-freeze', one_election_final_freeze, name='one-election-final-freeze'),
     re_path(r'^ajax/contract$', deployed_contract, name='deployed-contract'),
     re_path(r'^ajax/question$', question_registered_to_contract, name='question-registered-to-contract'),
-    re_path(r'^ajax/pubkey', set_pubkey_transaction_contract, name='set-pubkey-transaction-contract'),
+    re_path(r'^ajax/voters$', voters_added_to_contract, name='voters-added-to-contract'),
+    re_path(r'^ajax/pubkey$', set_pubkey_transaction_contract, name='set-pubkey-transaction-contract'),
 
     # badge
     re_path(r'^badge$', election_badge, name='election-badge'),

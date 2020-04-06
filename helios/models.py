@@ -49,7 +49,7 @@ class Election(HeliosModel):
 
   election_pubkey_hash = models.CharField(max_length=100, null = True)
   election_pubkey_transaction = models.CharField(max_length=100, null = True)
-  voters_added_to_contract = models.IntegerField(default = 0, null = False)
+  voters_added_transaction = models.CharField(max_length = 100, null = True)
 
   # keep track of the type and version of election, which will help dispatch to the right
   # code, both for crypto and serialization
@@ -377,10 +377,10 @@ class Election(HeliosModel):
         'action': 'there is no owner of smart contract'
       })
 
-    if self.voters_added_to_contract != self.voter_set.count():
+    if self.voters_added_transaction == None:
       issues.append({
         'type': 'add voters',
-        'action': 'not all voters are added in the contract'
+        'action': 'voters are not added in the contract'
       })
 
     if self.no_questions_added_to_contract != len(self.questions):
@@ -818,8 +818,12 @@ class VoterFile(models.Model):
     
       # create the voter
       if not existing_voter:
+        from web3 import Web3
+
         voter_uuid = str(uuid.uuid4())
-        existing_voter = Voter(uuid= voter_uuid, user = None, voter_login_id = voter['voter_id'],
+        voter_uuid_hex = Web3.toHex(text=voter_uuid.replace("-",""))
+
+        existing_voter = Voter(uuid= voter_uuid, uuid_hex=voter_uuid_hex,user = None, voter_login_id = voter['voter_id'],
                       voter_name = voter['name'], voter_email = voter['email'], election = election)
         existing_voter.generate_password()
         new_voters.append(existing_voter)
@@ -848,6 +852,7 @@ class Voter(HeliosModel):
   #voter_id = models.CharField(max_length = 100)
 
   uuid = models.CharField(max_length = 50)
+  uuid_hex = models.CharField(max_length = 100)
 
   # for users of type password, no user object is created
   # but a dynamic user object is created automatically
@@ -882,9 +887,12 @@ class Voter(HeliosModel):
   @classmethod
   @transaction.atomic
   def register_user_in_election(cls, user, election):
-    voter_uuid = str(uuid.uuid4())
+    from web3 import Web3
 
-    voter = Voter(uuid= voter_uuid, user = user, election = election)
+    voter_uuid = str(uuid.uuid4())
+    voter_uuid_hex = Web3.toHex(text=voter_uuid.replace("-",""))
+
+    voter = Voter(uuid= voter_uuid, uuid_hex = voter_uuid_hex, user = user, election = election)
 
     # do we need to generate an alias?
     if election.use_voter_aliases:

@@ -10,6 +10,7 @@ from django.core.paginator import Paginator
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse, Http404, HttpResponseRedirect, HttpResponseForbidden, JsonResponse
 from django.db import transaction, IntegrityError
+from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 
 from validate_email import validate_email
 
@@ -159,7 +160,7 @@ def _castvote_shortcut_by_election(request, election, cast_vote):
   return render_template(request, 'castvote', {'cast_vote' : cast_vote,
                                                'vote_content': cast_vote.vote.toJSON(),
                                                'the_voter': cast_vote.voter,
-                                               'voter_uuid_hex': Web3.toHex(text=cast_vote.voter.uuid.replace("-","")),
+                                               'voter_uuid_hex': cast_vote.voter.uuid_hex,
                                                'election': election})
   
 def castvote_shortcut(request, vote_tinyhash):
@@ -800,7 +801,7 @@ def one_election_cast_done(request, election):
     votes = CastVote.get_by_voter(voter)
     vote_hash = votes[0].vote_hash
     cv_url = get_castvote_url(votes[0])
-    voter_uuid_hex = Web3.toHex(text=voter.uuid.replace("-",""))
+    voter_uuid_hex = voter.uuid_hex
 
     # only log out if the setting says so *and* we're dealing
     # with a site-wide voter. Definitely remove current_voter
@@ -1128,6 +1129,23 @@ def question_registered_to_contract(request, election):
   else:
     return JsonResponse({'error': "URL available only for POST request"}, status=404)
 
+@csrf_protect
+@election_admin(frozen=False)
+def voters_added_to_contract(request, election):
+  
+  if request.is_ajax and request.method == "POST":
+    if not election.voters_added_transaction:
+
+      election.voters_added_transaction = request.POST['votersTransactionHash']
+      election.save()
+
+      return JsonResponse({'message': "Your voters transaction is valid and saved on server"}, status=200)
+    else:
+      return JsonResponse({'error': "Voters transaction already setted or the CSRF token invalid"}, status=500)
+  else:
+    return JsonResponse({'error': "URL available only for POST request"}, status=404)
+ 
+
 @election_admin(frozen=False)
 def set_pubkey_transaction_contract(request, election):
 
@@ -1143,6 +1161,7 @@ def set_pubkey_transaction_contract(request, election):
   else:
     return JsonResponse({'error': "URL available only for POST request"}, status=404)
 
+@ensure_csrf_cookie
 @election_admin(frozen=False)
 def one_election_deploy_contract(request, election):
   issues = election.issues_deploy_contract
@@ -1170,9 +1189,6 @@ def one_election_deploy_contract(request, election):
 
     if not election.openreg:
       # PAGINATION FOR VOTERS
-      page = int(request.GET.get('page', 1))
-      limit = 15
-      
       order_by = 'user__user_id'
 
       # unless it's by alias, in which case we better go by UUID
@@ -1181,12 +1197,9 @@ def one_election_deploy_contract(request, election):
 
       # load a bunch of voters
       # voters = Voter.get_by_election(election, order_by=order_by)
-      voters = Voter.objects.filter(election = election).order_by(order_by).defer('vote')
-
-      voter_paginator = Paginator(voters, limit)
-      voters_page = voter_paginator.page(page)
-
-      total_voters = voter_paginator.count
+      voters = Voter.objects.filter(election = election).order_by(order_by).defer('vote').values('uuid_hex', 'voter_name', 'voter_email', 'alias')
+      
+      voters_json = json.dumps(list(voters))
 
       return render_template(request, 'election_deploy_contract', 
                         {'election': election, 
@@ -1198,9 +1211,7 @@ def one_election_deploy_contract(request, election):
                         'questions_blockchain': json.dumps(questions_blockchain),
                         'issues_p' : len(issues) > 0,
                         'server_node_address': settings.SERVER_NODE_ADDRESS,
-                        'voters_page': voters_page,
-                        'voters': voters_page.object_list,
-                        'total_voters': total_voters})
+                        'voters': voters_json})
 
 
     return render_template(request, 'election_deploy_contract', {'election': election,
