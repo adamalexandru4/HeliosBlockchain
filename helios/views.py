@@ -1402,12 +1402,11 @@ def voters_list_pretty(request, election):
   user = get_user(request)
   admin_p = user_can_admin_election(user, election)
 
-  categories = None
   eligibility_category_id = None
 
   try:
     if admin_p and can_list_categories(user.user_type):
-      categories = AUTH_SYSTEMS[user.user_type].list_categories(user)
+      # categories = AUTH_SYSTEMS[user.user_type].list_categories(user)
       eligibility_category_id = election.eligibility_category_id(user.user_type)
   except AuthenticationExpired:
     return user_reauth(request, user)
@@ -1437,7 +1436,7 @@ def voters_list_pretty(request, election):
                           'limit': limit, 'total_voters': total_voters,
                           'upload_p': VOTERS_UPLOAD, 'q' : q,
                           'voter_files': voter_files,
-                          'categories': categories,
+                          # 'categories': categories,
                           'eligibility_category_id' : eligibility_category_id})
 
 @election_admin()

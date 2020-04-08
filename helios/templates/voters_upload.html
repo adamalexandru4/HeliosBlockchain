@@ -1,39 +1,62 @@
 {% extends TEMPLATE_BASE %}
 
 {% block content %}
-  <h2 class="title">{{election.name}} &mdash; Bulk Upload Voters <span style="font-size:0.7em;">[<a href="{% url "one-election-view" election.uuid %}">back to election</a>]</span></h2>
-
+<div class="d-flex justify-content-between" style="margin-bottom: 1rem;">
+  <h3 class="title">{{election.name}} &mdash; Bulk Upload Voters </h3>
+  <a class="btn btn-primary" style="font-size: 1rem; min-width: 21%; max-height: 3rem;" href="{% url "one-election-view" election.uuid %}">back to election</a>
+</div>
+<hr>
+<div class="container">
 <form method="post" action="" id="upload_form" enctype="multipart/form-data">
-  <p>
-    If you would like to specify your list of voters by name and email address,<br />
-    you can bulk upload a list of such voters here.<br /><br />
-
-    Please prepare a text file of comma-separated values with the fields:
-</p>
-<pre>
-   &lt;unique_id&gt;,&lt;email&gt,&lt;full name&gt;
-</pre>
-
-<p>
-For example:
+  <p style="margin-bottom: 0px;">
+    If you would like to specify your list of voters by name and email address, you can bulk upload a list of such voters here.<br /><br />
   </p>
-  <pre>
-      benadida,ben@adida.net,Ben Adida
-      bobsmith,bob@acme.org,Bob Smith
-      ...
-  </pre> 
 
-  <p>
-    The easiest way to prepare such a file is to use a spreadsheet program and to export as "CSV".
+  <div class="card">
+    <div class="card-header bg-primary text-white">
+      Please prepare a text file of comma-separated values with the fields:
+    </div>
+    <div class="card-body badge-secondary text-black">
+      <pre>&lt;unique_id&gt;,&lt;email&gt,&lt;full name&gt;</pre>
+    </div>
+  </div>
+  <div class="card" style="margin-top: 1rem;">
+    <div class="card-header bg-info text-white">
+      For example: 
+    </div>
+    <div class="card-body badge-secondary text-black">
+      <pre style="margin-bottom: 0px;">benadida,ben@adida.net,Ben Adida
+bobsmith,bob@acme.org,Bob Smith
+  ...</pre>
+    </div>
+  </div>
+
+  <p style="margin-top: 1rem;">
+    The easiest way to prepare such a file is to use a spreadsheet program and to export as <span class="badge-success">CSV</span>.
   </p>
   {% if error %}
   <div style="color: red;">{{error}}</div>
   {% endif %}
     <input type="hidden" name="csrf_token" value="{{csrf_token}}" />
-    
-    <input type="file" name="voters_file" />
-    <input type="submit" value="go" />
+    <div class="form-group">
+      <div class="input-group mb-3">
+        <div class="custom-file">
+          <input type="file" onchange="this.nextElementSibling.innerText = this.files[0].name" accept=".csv" class="custom-file-input" id="inputGroupFile02" name="voters_file">
+          <label class="custom-file-label bg-primary text-white" for="inputGroupFile02">Choose file</label>
+        </div>
+      </div>
+    </div>
+    <div class="d-flex justify-content-end">
+      <input type="submit" style="font-size: 1rem;" value="UPLOAD" class="btn btn-info" />
+    </div>
 </form>
+
+<style>
+  .custom-file-label::after {
+    background-color: #1a1a1a;
+    color: white;
+  }
+</style>
 
 <div id="processing">
 </div>
@@ -41,6 +64,7 @@ For example:
 <div id="done" style="display:none;">
   OK, done uploading.<br />
   You can now <a href="./manage">view the list of voters</a>.
+</div>
 </div>
 
 {% endblock %}

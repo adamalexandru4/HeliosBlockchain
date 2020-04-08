@@ -191,7 +191,11 @@ Registration for your election is currently <b>closed</b>, which means only the 
 
     <script>
 
-    const voters = JSON.parse("{{voters|escapejs}}");
+    {% if voters %}
+      const voters = JSON.parse("{{voters|escapejs}}");
+    {% else %}
+      const voters = "";
+    {% endif %}
     var dataTable;
 
 

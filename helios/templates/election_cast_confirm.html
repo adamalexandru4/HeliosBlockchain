@@ -50,19 +50,25 @@ window.onbeforeunload = function(evt) {
 };
 
 </script>
-<p style="margin-top: 10px">Submitting your vote for <b>{{election.name}}</b>...</p>
 
-<div id="waiting_div">
-    Verifying and Casting your ballot<br />
-    <img src="/static/loading.gif" />
+
+<div class="d-flex justify-content-center" style="margin-bottom: 0rem;">
+  <h3 class="title">Submitting your vote for <b>{{election.name}}</b> </h3>
+</div>
+<hr>
+<div class="d-flex justify-content-center">
+  <div id="waiting_div">
+      Verifying and Casting your ballot<br />
+      <img src="/static/loading.gif" />
+  </div>
 </div>
 
 <div id="all_forms">
 
 {% if voter %}
-
+<div class="d-flex justify-content-center">
 {% include "_castconfirm_docast.html" %}
-
+</div>
 {% else %}
 
 {% if show_password %}

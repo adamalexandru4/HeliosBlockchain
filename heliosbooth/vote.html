@@ -415,6 +415,8 @@ Before going back to voting, you can post this audited ballot to the Helios trac
     BOOTH.election.hash = b64_sha256(raw_json);
     BOOTH.election.election_hash = BOOTH.election.hash
 
+    $("#title-election").text(BOOTH.election.name);
+
     // async?
     BOOTH.setup_workers(raw_json);
 
@@ -928,7 +930,7 @@ Before going back to voting, you can post this audited ballot to the Helios trac
         </div>
         <div id="page">
           <div id="header" style="display: none;">
-            <h1 class="text-center" style="font-size: 3rem;">Alegeri prezidentiale 2020</h1>
+            <h1 class="text-center" style="font-size: 3rem;" id="title-election">No text</h1>
             <ul class="list-group list-group-horizontal mt-3" id="progress_div" style="width: 100%;">
               <li class="list-group-item flex-fill text-center" id="progress_1">
                 Select answer(s)

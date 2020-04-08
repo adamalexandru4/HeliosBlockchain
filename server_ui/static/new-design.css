@@ -1,0 +1,11 @@
+.row {
+    max-width: none;
+    margin-left: unset;
+    margin-right: unset;
+}
+
+.status-election {
+    font-size: 1.25rem; 
+    padding: 0.5rem; 
+    text-transform: uppercase;
+}

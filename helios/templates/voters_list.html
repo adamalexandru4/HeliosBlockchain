@@ -2,39 +2,56 @@
 
 {% block title %}Voters &amp; Ballot Tracking Center for {{election.name}}{% endblock %}
 {% block content %}
-  <h3 class="title">{{election.name}} &mdash; Voters and Ballot Tracking Center <span style="font-size:0.7em;">[<a href="{% url "one-election-view" election.uuid %}">back to election</a>]</span></h3>
-
-<p>
-<b>Who can vote?</b>
-{% if election.openreg %}
-{{election.pretty_eligibility|safe}}
-{% else %}
-<em>Only the voters listed here</em>.
-{% endif %}
-</p>
-
-{% if admin_p and not election.frozen_at %}
-{% if election.private_p %}
-<em>Your election is marked private, which means you cannot open registration up more widely</em>.<br />
-{% else %}
-You can change this setting:
-<form method="post" action="{% url "voters-eligibility" election.uuid %}">
-<input type="hidden" name="csrf_token" value="{{csrf_token}}" />
-<input type="radio" name="eligibility" value="openreg" {% if election.openreg and not election.eligibility %}CHECKED{% endif %} /> anyone can vote<br />
-<input type="radio" name="eligibility" value="closedreg" {% if not election.openreg %}CHECKED{% endif %} /> only voters listed explicitly below can vote<br />
-{% if categories %}
-<input type="radio" name="eligibility" value="limitedreg" {% if election.eligibility %}CHECKED{% endif %} /> only voters who are members of 
-<select name="category_id">
-{% for category in categories %}
-<option value="{{category.id}}" {% if eligibility_category_id == category.id %}SELECTED{% endif %}> {{category.name}}</option>
-{% endfor %}
-</select>
-<br />
-{% endif %}
-<input type="submit" value="update" />
-</form>
-{% endif %}
-{% endif %}
+<div class="d-flex justify-content-between" style="margin-bottom: 1rem;">
+  <h3 class="title">{{election.name}} &mdash; Voters & Ballot Tracking Center </h3>
+  <a class="btn btn-primary" style="font-size: 1rem; min-width: 21%; max-height: 3rem;" href="{% url "one-election-view" election.uuid %}">back to election</a>
+</div>
+<hr>
+<div class="row" style="margin: unset; max-width: unset;">
+  <div class="col-6">
+    <div class="d-flex justify-content-center" style="margin-top: 1.5rem;">
+      <h6  class="badge badge-success" style="color: white; font-size: 1rem;">
+      {% if election.openreg %}
+      {{election.pretty_eligibility|safe}}
+      {% else %}
+      Only the voters listed below can vote.
+      {% endif %}
+      </h6>
+    </div>
+  </div>
+  <div class="col-6" style="padding-right: 0px;">
+    <div class="d-flex justify-content-center">
+      {% if admin_p and not election.frozen_at %}
+      {% if election.private_p %}
+      <em>Your election is marked private, which means you cannot open registration up more widely</em>.<br />
+      {% else %}
+      <div class="row" style="margin: unset; max-width: unset;">
+        <h6>CHANGE THE PRIVACY:</h6>
+        <form method="post" action="{% url "voters-eligibility" election.uuid %}">
+        <input type="hidden" name="csrf_token" value="{{csrf_token}}" />
+        <input type="radio" name="eligibility" id="openreg" value="openreg" {% if election.openreg and not election.eligibility %}CHECKED{% endif %} />
+          <label for="openreg" style="font-size: 1rem;">anyone can vote</label><br />
+        <input type="radio" name="eligibility" id="closedreg" value="closedreg" {% if not election.openreg %}CHECKED{% endif %} />
+          <label for="closedreg" style="font-size: 1rem;">only voters listed explicitly below can vote</label><br />
+        <!-- {% if categories %}
+        <input type="radio" name="eligibility" value="limitedreg" {% if election.eligibility %}CHECKED{% endif %} /> only voters who are members of 
+        <select name="category_id">
+        {% for category in categories %}
+        <option value="{{category.id}}" {% if eligibility_category_id == category.id %}SELECTED{% endif %}> {{category.name}}</option>
+        {% endfor %}
+        </select>
+        <br />
+        {% endif %} -->
+      </div>
+      <div class="col" style="margin: unset; padding-right: 0px; max-width: unset; margin-top: 1.5rem;">
+          <input class="btn btn-info btn-sm" style="font-size: 0.8rem;" type="submit" value="update" />
+        </form>
+      </div>
+      {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
 
 {% if email_voters and election.frozen_at and admin_p %}
 <p><a class="button" href="{% url "voters-email" election.uuid %}">email voters</a></p>
@@ -50,53 +67,64 @@ You can change this setting:
 </p>
 {% endif %}
 
-{% if admin_p %}
-<!-- Add a Voter: WORK HERE-->
-{% if upload_p and not election.openreg %}
-<p>
-<a class="button" href="{% url "voters-upload" election_uuid=election.uuid %}">bulk upload voters</a>
-</p>
+<!-- voter worker - bulk voters -->
+  {% if admin_p %}
+  <!-- Add a Voter: WORK HERE-->
+  {% if upload_p and not election.openreg %}
+  <hr>
+  <div class="card">
+    <div class="card-body">
+  <div class="d-flex justify-content-center">
+    <p>
+    <a class="btn btn-info" href="{% url "voters-upload" election_uuid=election.uuid %}">bulk upload voters</a>
+    </p>
+  </div>
 
-{% if voter_files %}
-Prior Bulk Uploads:
-<ul>
-{% for vf in voter_files %}
-<li>
-{% if vf.voter_file %}
-{{vf.voter_file.size}}
-{% else %}
-{{vf.voter_file_content|length}}
-{% endif %}
- bytes, at {{vf.uploaded_at}}:
-{% if vf.processing_finished_at %}
-<em>done processing: {{vf.num_voters}} voters loaded</em>
-{% else %}
+  {% if voter_files %}
+  <h6>Prior Bulk Uploads:</h6>
+  <ul>
+  {% for vf in voter_files %}
+  <li>
+  {% if vf.voter_file %}
+  {{vf.voter_file.size}}
+  {% else %}
+  {{vf.voter_file_content|length}}
+  {% endif %}
+  bytes, at {{vf.uploaded_at}}:
+  {% if vf.processing_finished_at %}
+  <em>done processing: {{vf.num_voters}} voters loaded</em>
+  {% else %}
 
-{% if vf.processing_started_at %}
-<em>currently processing</em>
-{% else %}
-<em>not yet processed</em>
-{% endif %}
+  {% if vf.processing_started_at %}
+  <em>currently processing</em>
+  {% else %}
+  <em>not yet processed</em>
+  {% endif %}
 
-{% endif %}
-</li>
-{% endfor %}
-</ul>
-{% endif %}
-{% endif %}
-{% endif %}
+  {% endif %}
+  </li>
+  {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+</div>
+  {% endif %}
+  {% endif %}
+<!-- bulk voters -->
 
 {% if voters %}
-
-<p>
-<b>
-{% if election.num_cast_votes %}
-{{election.num_cast_votes}} cast vote{% ifequal election.num_cast_votes 1 %}{% else %}s{% endifequal %}
-{% else %}
-no votes yet
-{% endif %}
-</b>
-</p>
+<hr>
+<div class="container">
+  <div class="d-flex justify-content-center badge-success">
+    <h6 style="color: white; padding-top: 0.5rem;">
+    {% if election.num_cast_votes %}
+    {{election.num_cast_votes}} cast vote{% ifequal election.num_cast_votes 1 %}{% else %}s{% endifequal %}
+    {% else %}
+    no votes yet
+    {% endif %}
+    </h6>
+  </div>
+<br>
 
 {% if voters_page.has_previous %}
 <a href="./list?page={{voters_page.previous_page_number}}&limit={{limit}}&q={{q|urlencode}}">previous {{limit}}</a> &nbsp;&nbsp;
@@ -152,5 +180,6 @@ Voters {{voters_page.start_index}} - {{voters_page.end_index}} (of {{total_voter
 <br /><br />
 <em>no voters.</em>
 {% endif %}
+</div>
 
 {% endblock %}

@@ -1,40 +1,49 @@
 {% extends TEMPLATE_BASE %}
 
 {% block content %}
-  <h2 class="title">{{election.name}} &mdash; Bulk Upload Voters &mdash; Confirm<span style="font-size:0.7em;">[<a href="{% url "one-election-view" election.uuid %}">back to election</a>]</span></h2>
-
+<div class="d-flex justify-content-between" style="margin-bottom: 1rem;">
+  <h3 class="title">{{election.name}} &mdash; Bulk Upload Voters </h3>
+  <a class="btn btn-primary" style="font-size: 1rem; min-width: 21%; max-height: 3rem;" href="{% url "one-election-view" election.uuid %}">back to election</a>
+</div>
+<hr>
 <p>
 You have uploaded a file of voters. The first few rows of this file are:
 </p>
 
-<table>
-<tr><th>Voter Login</th><th>Email Address</th><th>Name</th></tr>
+<table style="width: 100%; height: 100%;">
+<tr class="bg-primary">
+  <th class="text-white">Voter Login</th>
+  <th class="text-white">Email Address</th>
+  <th class="text-white">Name</th>
+</tr>
 {% for v in voters %}
 <tr><td>{{v.voter_id}}</td><td>{{v.email}}</td><td>{{v.name}}</td></tr>
 {% endfor %}
 </table>
 
 {% if problems %}
-<p style="font-size: 1.5em;">
-HOLD ON:<br />
+<h6 class="badge-danger" style="padding: 1rem;">
 {% for problem in problems %}
-- {{problem}}<br />
+{{problem}}<br />
 {% endfor %}
-</p>
+</h6>
 <br />
 
-<a href="{% url "voters-upload-cancel" election.uuid %}">never mind, upload a different file</a>
+<div class="d-flex justify-content-center">
+<a class="btn btn-primary" href="{% url "voters-upload-cancel" election.uuid %}">never mind, upload a different file</a>
+</div>
 </p>
 
 {% else %}
 <p></p>
 <form method="post" action="" id="upload_form">
-  Does this look right to you?
   <input type="hidden" name="confirm_p" value="1" />
-  <input type="submit" value="Yes, let's go" />
-</form>
 
-<a href="{% url "voters-upload-cancel" election.uuid %}">no, let me upload a different file</a>
+  <div class="d-flex justify-content-end">
+    <a class="btn btn-danger" style="margin-right: 1rem;" href="{% url "voters-upload-cancel" election.uuid %}">Cancel</a>
+    <input class="btn btn-primary" type="submit" value="Confirm" />
+  </div>
+</form>
 
 {% endif %}
 

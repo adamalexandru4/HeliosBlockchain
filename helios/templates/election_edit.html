@@ -46,7 +46,7 @@
           {% if field|widget_type == "checkboxinput" %}
             <div class="form-check is-valid">
               <label class="form-check-label" style="font-size: 1.1rem;">
-                <input class="form-check-input" type="checkbox" id="{{field.id_for_label}}" name="{{field.label}}" style="margin: 0 0.5rem 0 0;">
+                <input class="form-check-input" type="checkbox" id="{{field.id_for_label}}" name="{{field.name}}" value="{{field.value}}" {% if field.value %}checked{% endif %} style="margin: 0 0.5rem 0 0;">
                 {{field.label}}
               </label>
             </div>
@@ -58,7 +58,7 @@
         {% if field|widget_type == "checkboxinput" %}
           <div class="form-check">
             <label class="form-check-label" style="font-size: 1.1rem;">
-              <input class="form-check-input" type="checkbox" id="{{field.id_for_label}}" name="{{field.label}}" style="margin: 0 0.5rem 0 0;">
+              <input class="form-check-input" type="checkbox" id="{{field.id_for_label}}" name="{{field.name}}" value="{{field.value}}" {% if field.value %}checked{% endif %} style="margin: 0 0.5rem 0 0;">
               {{field.label}}
             </label>
           </div>
@@ -79,5 +79,19 @@
     <button type="submit" class="btn btn-primary" style="font-size: 1rem;">Update</button>
   </div>
 </form>
+
+<script>
+  $(document).ready(function() {
+    $('input[type="checkbox"]').change(function() {
+      value = $(`#${this.id}`).prop('checked');
+      $(`#${this.id}`).prop('checked', value);
+
+      if(value)
+        $(`#${this.id}`).prop('value', "True");
+      else
+        $(`#${this.id}`).prop('value', "False");
+    });
+  });
+</script>
 
 {% endblock %}
