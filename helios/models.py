@@ -29,6 +29,9 @@ from helios.datatypes.djangofield import LDObjectField
 import csv, copy
 # import unicodecsv
 
+import base64
+from web3 import Web3, HTTPProvider
+
 # from helios.views import get_election_url
 
 class HeliosModel(models.Model, datatypes.LDObjectContainer):
@@ -818,7 +821,6 @@ class VoterFile(models.Model):
     
       # create the voter
       if not existing_voter:
-        from web3 import Web3
 
         voter_uuid = str(uuid.uuid4())
         voter_uuid_hex = Web3.toHex(text=voter_uuid.replace("-",""))
@@ -887,7 +889,6 @@ class Voter(HeliosModel):
   @classmethod
   @transaction.atomic
   def register_user_in_election(cls, user, election):
-    from web3 import Web3
 
     voter_uuid = str(uuid.uuid4())
     voter_uuid_hex = Web3.toHex(text=voter_uuid.replace("-",""))
@@ -1121,9 +1122,6 @@ class CastVote(HeliosModel):
     return cls.objects.filter(voter = voter).order_by('-cast_at')
 
   def verify_and_store(self, election_contract_address, election_contract_abi):
-
-    import base64
-    from web3 import Web3, HTTPProvider
     w3 = Web3(HTTPProvider('http://127.0.0.1:8545'))
 
     # if it's quarantined, don't let this go through

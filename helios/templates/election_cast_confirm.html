@@ -70,6 +70,7 @@ window.onbeforeunload = function(evt) {
 {% include "_castconfirm_docast.html" %}
 </div>
 {% else %}
+<div class="text-center">
 
 {% if show_password %}
 {% if user %}
@@ -125,6 +126,7 @@ Your smart ballot tracker is:<br /><br />
     <tt style="font-size:1.3em; font-weight: bold; padding-left: 20px;">  {{vote_fingerprint}}</tt>
 </p>
 {# this closes the IF ELSE of this being password_only #}
+</div>
 {% endif %}
 
 </div>

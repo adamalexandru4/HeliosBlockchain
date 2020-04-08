@@ -8,6 +8,7 @@ contract HeliosElection {
         bytes32 hash;
         uint castAt;
         uint verifiedAt;
+        bool alreadyVoted;
     }
 
     struct Question {
@@ -30,6 +31,7 @@ contract HeliosElection {
 
     mapping(bytes32 => bool) eligibleVoters;
     mapping(bytes32 => Vote) public votes;
+    bytes32[] public votersWhoVoted;
 
     bool public isElectionPublic;
     uint public createdAt;
@@ -123,10 +125,14 @@ contract HeliosElection {
 
         require(_castAt < _verifiedAt, "Verification time is not after casting time. You cannot hack it");
 
+        if(!votes[_uuid].alreadyVoted)
+            votersWhoVoted.push(_uuid);
+
         Vote memory newVote;
         newVote.hash = _hash;
         newVote.castAt = _castAt;
         newVote.verifiedAt = _verifiedAt;
+        newVote.alreadyVoted = true;
 
         votes[_uuid] = newVote;
     }

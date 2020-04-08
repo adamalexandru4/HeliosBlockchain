@@ -188,24 +188,27 @@ Once you do this, the tally will visible to you, the administrator, only.
 <div class="d-flex justify-content-center">
   <a class="btn btn-info" href="{{test_cookie_url}}">Vote in this {{election.election_type}} </a>
 </div>
-<br />
-<br />
 {% if election.voting_extended_until %}
-This {{election.election_type}} was initially scheduled to end at {{election.voting_ends_at}} (UTC),<br />
-but has been extended until {{ election.voting_extended_until }} (UTC).
+<div class="d-flex justify-content-center" style="margin-top: 1rem">
+  This {{election.election_type}} was initially scheduled to end at {{election.voting_ends_at}} (UTC),<br />
+  BUT has been extended until {{ election.voting_extended_until }} (UTC).
+</div>
 {% else %}
 {% if election.voting_ends_at %}
-<br />
-This {{election.election_type}} is scheduled to end at {{election.voting_ends_at}} (UTC).
+<div class="d-flex justify-content-center" style="margin-top: 1rem">
+  This {{election.election_type}} is scheduled to end at {{election.voting_ends_at}} (UTC).
+</div>
 {% else %}
-This {{election.election_type}} ends at the administrator's discretion.
+<div class="d-flex justify-content-center" style="margin-top: 1rem">
+  This {{election.election_type}} ends at the administrator's discretion.
+</div>
 {% endif %}
-<br />
 {% endif %}
 
 {% if election.private_p and voter %}
-<br />
-This election is <em>private</em>. You are signed in as eligible voter <em>{{voter.name}}</em>.
+<div class="d-flex justify-content-center" style="margin-top: 1rem">
+  This election is <em style="margin-left: 2px;"> private</em>. You are signed in as eligible voter <em>{{voter.name}}</em>.
+</div>
 {% endif %}
 <br />
 {% else %}
@@ -214,28 +217,34 @@ This election is <em>private</em>. You are signed in as eligible voter <em>{{vot
 </span> <br /><br />
 {% endif %}
 
-
 {% if user %}
 {% if voter %}
-<p style="padding-top:1px;">
-  You are registered to vote in this {{election.election_type}}.
-{% if election.use_voter_aliases %}
-  Your voter alias is {{voter.alias}}.
-{% endif %}
-</p>
+<div class="d-flex justify-content-center">
+  <p style="padding-top:1px;">
+    You are registered to vote in this {{election.election_type}}.
+  {% if election.use_voter_aliases %}
+    Your voter alias is {{voter.alias}}.
+  {% endif %}
+  </p>  
+</div>
 
 {% else %}
 {% if election.result %}
 {% else %}
 {% if election.openreg %}
 {% if eligible_p %}
-You are eligible to vote in this election.
+<div class="d-flex justify-content-center">
+  You are eligible to vote in this election.
+</div>
 {% else %}
-You are <em>not eligible</em> to vote in this {{election.election_type}}.
+<div class="d-flex justify-content-center">
+  You are <em>not eligible</em> to vote in this {{election.election_type}}.
+</div>
 {% endif %}
 {% else %}
+<div class="d-flex justify-content-center">
 You are <em>not eligible</em> to vote in this {{election.election_type}}.
-<br />
+</div>
 {% endif %}
 {% endif %}
 {% endif %}
@@ -243,8 +252,14 @@ You are <em>not eligible</em> to vote in this {{election.election_type}}.
 
 {% if election.openreg %}
 {% if election.eligibility %}
+
+<div class="d-flex justify-content-center">
 This election is open to: {{election.pretty_eligibility|safe}}
-<a href="{{settings.SECURE_URL_HOST}}{% url "auth-views-index" %}?return_url={{CURRENT_URL}}">Log in</a> to check your eligibility.
+</div>
+<div class="d-flex justify-content-center">
+<a class="badge badge-info" style="font-size: 0.75rem;" href="{{settings.SECURE_URL_HOST}}{% url "auth-views-index" %}?return_url={{CURRENT_URL}}">Log in</a> 
+<span style="margin-left: 0.5rem;">to check your eligibility.</span>
+</div>
 {% else %}
 Anyone can vote in this election.
 {% endif %}
@@ -258,12 +273,14 @@ Anyone can vote in this election.
 
 
 {% if admin_p and election.voting_ends_at and not election.tallying_started_at %}
-<br /><a href="{% url "one-election-extend" election.uuid %}">extend voting</a><br />
+<div class="d-flex justify-content-center" style="margin-top: 0.6rem;">
+<a class="btn btn-primary btn-sm" style="font-size: 0.7rem;" href="{% url "one-election-extend" election.uuid %}">extend voting</a>
+</div>
 {% endif %}
 
 <div class="bg-primary text-white" style=" width: 100%; padding:5px; padding-left: 10px; margin-top: 15px; border: 1px solid #aaa;" class="round">
   <i class="fas fa-info-circle fa-lg" style="color: white;"></i>
-<a class="btn text-white" style="padding-left: 0.2rem;" href="#" onclick="document.getElementById('auditbody').setAttribute('style', 'display: block;');">Audit Info</a>
+<a class="btn text-white" style="padding-left: 0.2rem;" href="#" onclick="$('#auditbody').toggle();">Audit Info</a>
 <div id="auditbody" style="display:none;">
 <hr style="background-color: white; margin-top: 5px;">
 <div class="row">
