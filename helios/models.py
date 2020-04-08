@@ -335,14 +335,14 @@ class Election(HeliosModel):
     if not self.eligibility:
       return "Anyone can vote."
     else:
-      return_val = "<ul>"
+      return_val = "<ul style='margin-bottom: 0rem;'>"
       
       for constraint in self.eligibility:
         if 'constraint' in constraint:
           for one_constraint in constraint['constraint']:
             return_val += "<li>%s</li>" % AUTH_SYSTEMS[constraint['auth_system']].pretty_eligibility(one_constraint)
         else:
-          return_val += "<li> any %s user</li>" % constraint['auth_system']
+          return_val += "<li> any %s user can vote</li>" % constraint['auth_system']
 
       return_val += "</ul>"
 

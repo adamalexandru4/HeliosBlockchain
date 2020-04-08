@@ -3,9 +3,14 @@
 {% block title %}Compute Encryted Tally for {{election.name}}{% endblock %}
 
 {% block content %}
-  <h2 class="title">Compute Tally for Election: {{election.name}}</h2>
-
+  <h2 class="title"></h2>
+  <div class="d-flex justify-content-between" style="margin-bottom: 1rem;">
+    <h3 class="title">Compute Tally for Election: <span class="text-info">{{election.name}}</span></h3>
+</div>
+  <hr>
 <div id="instructions">
+  <div class="card">
+  <div class="card-body text-center">
 {% if election.num_cast_votes %}
 <p>
     You are about to compute the encrypted tally for election <b>{{election.name}}</b>.
@@ -16,18 +21,20 @@
 </p>
 
 <form method="post" action="" onsubmit="alert('ok, tally has begun')" class="pretty">
-<input type="hidden" name="csrf_token" value="{{csrf_token}}" />
-    
-<input class="button" type="submit" value="compute encrypted tally!" />
-<button onclick="document.location='./view'; return false;">never mind</button>
-</form>
+  <input type="hidden" name="csrf_token" value="{{csrf_token}}" />
+
+  <button class="btn btn-danger" style="font-size: 1rem;" onclick="document.location='./view'; return false;">NOT YET</button>      
+  <input class="btn btn-success" style="font-size: 1rem;" type="submit" value="compute encrypted tally!" />
+  </form>
 {% else %}
 <p>
-No votes have been cast in this election. At least one vote must be cast before you compute the tally.<br /><br />
-<a href="./view">back to election</a>
-</p>
+  No votes have been cast in this election. At least one vote must be cast before you compute the tally.<br /><br />
+  <a class="btn btn-danger" style="font-size: 1rem;" href="./view">back to election</a>
+  </p>
+<p>
 {% endif %}
 </div>
+  </div>
+</div>
 
-<br /><br />
 {% endblock %}

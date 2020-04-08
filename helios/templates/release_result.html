@@ -2,18 +2,28 @@
 
 {% block title %}Release Result &mdash; {{election.name}}{% endblock %}
 {% block content %}
-  <h2 class="title">{{election.name}} &mdash; Release Result <span style="font-size:0.7em;">[<a href="{% url "one-election-view" election.uuid %}">cancel</a>]</span></h2>
+  <div class="d-flex justify-content-between" style="margin-bottom: 1rem;">
+    <h3 class="title">{{election.name}} &mdash; Release Result </h3>
+    <a class="btn btn-primary" style="font-size: 1rem; min-width: 21%; max-height: 3rem;" href="{% url "one-election-view" election.uuid %}">back to election</a>
+  </div>
+  <hr>
+  <div class="card">
+    <div class="card-body text-center">
+      <p style="font-size: 1rem;">
+        You are about to release the result for this election.
+      </p>
 
-  <p>
-    You are about to release the result for this election.
-  </p>
-
-  <form method="POST" action="">
-    <input type="hidden" name="csrf_token" value="{{csrf_token}}" />
-    <p>
-    <input type="checkbox" name="send_email" value="send_email" checked="checked"/> Send email to voters reporting release of result.
-    </p>
-    <input type="submit" class="button" value="release result!" />
-  </form>
+      <form method="POST" action="">
+        <input type="hidden" name="csrf_token" value="{{csrf_token}}" />
+        <div class="form-group">
+          <div class="custom-control custom-checkbox">
+            <input type="checkbox"id="send-email" name="send_email" value="send_email" checked="checked"/>
+            <label for="send-email"><h6>Send email to voters reporting release of result.</h6></label>
+          </div>
+        </div>
+        <input type="submit" class="btn btn-info" style="font-size: 1rem;" value="release result" />
+      </form>
+    </div>
+</div>
 
 {% endblock %}

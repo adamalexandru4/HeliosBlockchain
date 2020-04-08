@@ -150,21 +150,27 @@ Once you do this, the tally will visible to you, the administrator, only.
 {% if show_result %}
 {% if election.result_released_at %}
 <span class="badge badge-warning d-flex justify-content-center status-election">
-    This election is complete.
-</span><br /><br /><br />
+    This election is complete
+</span><br />
 {% endif %}
 
-<h3 class="highlight-box">Tally</h3>
+<span class="badge badge-primary d-flex justify-content-center">
+  <h5 class="text-white">Tally</h5>
+</span>
 {% for question in election.pretty_result %}
-<b><span style="font-size:0.8em;">Question #{{forloop.counter}}</span><br />{{question.question}}</b><br />
-<table class="pretty" style="width: auto;">
-{% for answer in question.answers %}
-<tr>
-  <td style="padding-right:80px;{% if answer.winner %}font-weight:bold;{% endif %}">{{answer.answer}}</td>
-  <td align="right" style="{% if answer.winner %}font-weight:bold;{% endif %}">{{answer.count}}</td>
-</tr>
-{% endfor %}
-</table>
+<div class="card">
+  <div class="card-body">
+  <h6><span class="text-primary" style="font-size:1rem;">Question #{{forloop.counter}}</span><span style="font-size: 1rem; margin-left: 0.5rem;">&mdash; {{question.question}}</span></h6>
+  <table class="pretty" style="width: auto; font-size: 1rem; margin-top: 1rem;">
+  {% for answer in question.answers %}
+  <tr>
+    <td style="padding-right:80px;{% if answer.winner %}font-weight:bold;{% endif %}">{{answer.answer}}</td>
+    <td align="right" style="{% if answer.winner %}font-weight:bold;{% endif %}"><b style="font-weight: 900;">{{answer.count}}</b></td>
+  </tr>
+  {% endfor %}
+  </table>
+  </div>
+</div>
 {% endfor %}
 
 
@@ -255,52 +261,61 @@ Anyone can vote in this election.
 <br /><a href="{% url "one-election-extend" election.uuid %}">extend voting</a><br />
 {% endif %}
 
-<div style="background: lightyellow; padding:5px; padding-left: 10px; margin-top: 15px; border: 1px solid #aaa; width: 720px;" class="round">
-<a href="#" onclick="document.getElementById('auditbody').setAttribute('style', 'display: block;');">Audit Info</a>
+<div class="bg-primary text-white" style=" width: 100%; padding:5px; padding-left: 10px; margin-top: 15px; border: 1px solid #aaa;" class="round">
+  <i class="fas fa-info-circle fa-lg" style="color: white;"></i>
+<a class="btn text-white" style="padding-left: 0.2rem;" href="#" onclick="document.getElementById('auditbody').setAttribute('style', 'display: block;');">Audit Info</a>
 <div id="auditbody" style="display:none;">
-<br />Election URL:<br />
-<tt style="font-size: 1.2em;"><a href="{{election.url}}">{{election.url}}</a></tt>
-
+<hr style="background-color: white; margin-top: 5px;">
+<div class="row">
+  <div class="col-3">Election URL:</div>
+  <div class="col-9">
+    <tt style="font-size: 1.2em; padding: 0.35rem;" class="bg-white"><a href="{{election.url}}">{{election.url}}</a></tt>
+  </div>
+</div>
 {% if election.frozen_at %}
-<br />
-<br />Election Fingerprint:<br />
-<tt style="font-size: 1.3em; font-weight: bold;">{{election.hash}}</tt>
 
+<div class="row" style="margin-top: 1rem;">
+  <div class="col-3">Election Fingerprint:</div>
+  <div class="col-9">
+    <tt style="font-size: 1.2em; padding: 0.35rem; font-weight: bold;" class="bg-white text-dark">{{election.hash}}</tt>
+  </div>
+</div>
 
 {% if votes %}
-<p>Your smart ballot tracker:<br />
-<tt style="font-size:14pt; font-weight: bold;">{{votes.0.vote_hash}}</tt>
-</p>
+<div class="row" style="margin-top: 1rem;">
+  <div class="col-3">
+    Your smart ballot tracker:
+  </div>
+  <div class="col-9">
+    <tt style="font-size:14pt; padding:0.35rem; font-weight: bold;" class="bg-white text-dark">{{votes.0.vote_hash}}</tt>
+  </div>
+</div>
 {% endif %}
 
-<p style="font-size: 1.3em;">
-<a href="{% url "voters-list-pretty" election.uuid %}">Ballot Tracking Center</a> &nbsp;| &nbsp;
-<a href="{% url "one-election-audited-ballots" election.uuid %}">Audited Ballots</a>
+<p style="font-size: 1.3em; margin-top: 1rem;">
+<a class="btn btn-secondary" style="width: 15rem;" href="{% url "voters-list-pretty" election.uuid %}">Ballot Tracking Center</a> &nbsp;| &nbsp;
+<a class="btn btn-secondary" style="width: 16rem;" href="{% url "one-election-audited-ballots" election.uuid %}">Audited Ballots</a>
 </p>
-
 {% endif %}
 
 {% if not election.voting_has_started %}
 <p style="font-size: 1.2em;">
-  <a href="{{SECURE_URL_HOST}}/booth/vote.html?election_url={% url "one-election" election.uuid %}">preview booth</a>
+  <a class="btn btn-secondary" href="{{SECURE_URL_HOST}}/booth/vote.html?election_url={% url "one-election" election.uuid %}">preview booth</a>
 </p>
 {% endif %}  
 
 {% if election.voting_has_stopped %}
 <p style="font-size: 1.2em;">
 {% if election.result %}
-verify <a target="_blank" href="/verifier/verify.html?election_url={% url "one-election" election.uuid %}">election tally</a>.
+<a class="btn btn-secondary" style="width: 15rem;" target="_blank" href="/verifier/verify.html?election_url={% url "one-election" election.uuid %}">verify election tally</a> &nbsp;| &nbsp;
 {% endif %}
 
-review the <a href="{{vote_url}}">voting booth</a>.
+<a class="btn btn-secondary" style="width: 16rem;" href="{{vote_url}}">review the voting booth</a>
 </p>
-
 {% endif %}
 
 </div>
 </div>
-
-
 
 
 {% endblock %}

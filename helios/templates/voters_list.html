@@ -19,9 +19,10 @@
       </h6>
     </div>
   </div>
+
+  {% if admin_p and not election.frozen_at %}
   <div class="col-6" style="padding-right: 0px;">
     <div class="d-flex justify-content-center">
-      {% if admin_p and not election.frozen_at %}
       {% if election.private_p %}
       <em>Your election is marked private, which means you cannot open registration up more widely</em>.<br />
       {% else %}
@@ -48,14 +49,18 @@
         </form>
       </div>
       {% endif %}
-      {% endif %}
     </div>
   </div>
-</div>
+  {% endif %}
 
-{% if email_voters and election.frozen_at and admin_p %}
-<p><a class="button" href="{% url "voters-email" election.uuid %}">email voters</a></p>
-{% endif %}
+  {% if email_voters and election.frozen_at and admin_p %}
+  <div class="col-6" style="padding-right: 0px;">
+    <div class="d-flex justify-content-center" style="margin-top: 1.5rem;">
+      <p><a class="btn btn-info" style="font-size: 1rem;" href="{% url "voters-email" election.uuid %}">email voters</a></p>
+    </div>
+  </div>
+  {% endif %}
+</div>
 
 {% if election.num_voters > 20 %}
 <p>
