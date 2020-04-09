@@ -37,6 +37,7 @@ from .security import (election_view, election_admin,
 
 import uuid, datetime
 import logging
+import json
 
 # from .models import Election, CastVote, Voter, VoterFile, Trustee, AuditedBallot
 from . import datatypes
@@ -49,6 +50,8 @@ from django.apps import apps
 
 from .ethereum.interface import ContractInterface
 from web3 import Web3, HTTPProvider
+from web3.exceptions import TransactionNotFound
+
 w3 = Web3(HTTPProvider('http://127.0.0.1:8545'))
 w3.eth.defaultAccount = w3.eth.accounts[0]
 
@@ -1168,7 +1171,6 @@ def one_election_deploy_contract(request, election):
   questions_blockchain = list(QuestionBlockchain.objects.all().filter(election = election).values())
 
   try:
-    import json
     election_contract = settings.COMPILE_ELECTION_CONTRACT.get(settings.CONTRACTS_DIR + '/HeliosElection.sol:HeliosElection')
     election_contract_abi_json = json.dumps(election_contract.get('abi'))
     election_contract_bytecode = election_contract.get('bin')
@@ -1273,6 +1275,15 @@ def one_election_compute_tally(request, election):
     return HttpResponseRedirect(settings.SECURE_URL_HOST + reverse(one_election_view,args=[election.election_id]))
 
   if request.method == "GET":
+    # Check if last transaction is mined
+    last_vote = Voter.objects.filter(election_id=election.id).order_by('-cast_at')[0]
+
+    try:
+      transaction_receipt = w3.eth.getTransaction(last_vote.tx_hash)
+    except TransactionNotFound:
+      print('Not all transactions are mined yet.. try again later')
+      return HttpResponseRedirect(settings.SECURE_URL_HOST + reverse(one_election_view, args=[election.election_id]))
+
     return render_template(request, 'election_compute_tally', {'election': election})
   
   check_csrf(request)
@@ -1283,8 +1294,12 @@ def one_election_compute_tally(request, election):
   election.tallying_started_at = datetime.datetime.utcnow()
   election.save()
 
-  tasks.election_compute_tally.delay(election_id = election.id)
-  #tasks.election_compute_tally(election_id = election.id)
+  election_contract_compiled = settings.COMPILE_ELECTION_CONTRACT.get(
+    settings.CONTRACTS_DIR + '/HeliosElection.sol:HeliosElection')
+  election_contract_abi = election_contract_compiled.get('abi')
+
+  tasks.election_compute_tally.delay(election_id = election.id, election_contract_abi = election_contract_abi)
+  #tasks.election_compute_tally(election_id = election.id, election_contract_abi = election_contract_abi)
 
   return HttpResponseRedirect(settings.SECURE_URL_HOST + reverse(one_election_view,args=[election.uuid]))
 

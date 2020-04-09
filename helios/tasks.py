@@ -14,6 +14,8 @@ import copy
 from django.conf import settings
 from Crypto import Random
 
+from web3 import Web3, HTTPProvider
+
 @shared_task()
 def cast_vote_verify_and_store(cast_vote_id, election_contract_address, election_contract_abi, status_update_message=None, **kwargs):
     cast_vote = CastVote.objects.get(id = cast_vote_id)
@@ -86,10 +88,10 @@ def single_voter_notify(voter_uuid, notification_template, extra_vars={}):
     voter.send_notification(notification)
 
 @shared_task()
-def election_compute_tally(election_id):
+def election_compute_tally(election_id, election_contract_abi):
     Random.atfork()
     election = Election.objects.get(id = election_id)
-    election.compute_tally()
+    election.compute_tally(election_contract_abi)
     election_notify_admin.delay(election_id = election_id,
                                 subject = "encrypted tally computed",
                                 body = """

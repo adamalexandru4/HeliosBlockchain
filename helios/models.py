@@ -6,7 +6,8 @@ Ben Adida
 (ben@adida.net)
 """
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, MultipleObjectsReturned, ObjectDoesNotExist
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models, transaction
 import json
 from django.conf import settings
@@ -19,7 +20,6 @@ from .crypto import electionalgs, algs, utils
 from helios import utils as heliosutils
 
 from helios import datatypes
-
 
 # useful stuff in helios_auth
 from helios_auth.models import User, AUTH_SYSTEMS
@@ -53,6 +53,7 @@ class Election(HeliosModel):
   election_pubkey_hash = models.CharField(max_length=100, null = True)
   election_pubkey_transaction = models.CharField(max_length=100, null = True)
   voters_added_transaction = models.CharField(max_length = 100, null = True)
+  voters_who_voted_json = JSONField(null = True)
 
   # keep track of the type and version of election, which will help dispatch to the right
   # code, both for crypto and serialization
@@ -427,14 +428,84 @@ class Election(HeliosModel):
   def ready_for_tallying(self):
     return datetime.datetime.utcnow() >= self.tallying_starts_at
 
-  def compute_tally(self):
+  def download_votes_from_blockchain(self, election_contract_abi):
+    w3 = Web3(HTTPProvider('http://127.0.0.1:8545'))
+    election_contract = w3.eth.contract(address=self.contract_address, abi=election_contract_abi)
+
+    voters_who_voted = election_contract.functions.getVotersUUID().call(
+      {'from': w3.eth.accounts[2]})
+
+    voters_who_voted_hex = ['0x' + voter.hex() for voter in voters_who_voted]
+    return voters_who_voted_hex
+
+  def get_vote_hash_from_blockchain(self, uuid_hex, election_contract_abi):
+    w3 = Web3(HTTPProvider('http://127.0.0.1:8545'))
+    election_contract = w3.eth.contract(address=self.contract_address, abi=election_contract_abi)
+
+    vote = election_contract.functions.getVote(uuid_hex).call(
+      {'from': w3.eth.accounts[2]})
+
+    format_vote = []
+    if vote:
+      # vote_hash_hex
+      format_vote.append('0x' + vote[0].hex())
+      # cast_At
+      format_vote.append(datetime.datetime.fromtimestamp(vote[1]))
+      # verified At
+      format_vote.append(datetime.datetime.fromtimestamp(vote[2]))
+
+    return format_vote
+
+  def compute_tally(self, election_contract_abi):
     """
     tally the election, assuming votes already verified
     """
-    print('\nStarting to compute tally...............\n')
+
+    print('\nStarting to compute tally......\n')
     tally = self.init_tally()
-    for voter in self.voter_set.exclude(vote=None):
-      tally.add_vote(voter.vote, verify_p=False)
+
+    # Download votes from blockchain
+    voters_who_voted_hex = self.download_votes_from_blockchain(election_contract_abi)
+    voters_dict = dict.fromkeys(voters_who_voted_hex)
+
+    for voter_blockchain in voters_who_voted_hex:
+
+      try:
+        voter = self.voter_set.get(uuid_hex = voter_blockchain)
+      except Voter.MultipleObjectsReturned:
+        print('More voters with the same UUID exists in the DB')
+        return
+      except Voter.ObjectDoesNotExist:
+        print('There is no voter with the voter in the DB')
+        return
+
+      if voter:
+        # Get the hash from blockchain and check with the one from DB
+        vote_from_blockchain = self.get_vote_hash_from_blockchain(voter_blockchain, election_contract_abi)
+
+        if vote_from_blockchain and len(vote_from_blockchain) == 3:
+
+          vote_from_blockchain_hash_with_padding = base64.b64encode(bytes.fromhex(vote_from_blockchain[0][2:])).decode('utf-8')
+
+          vote_hash_with_padding = voter.vote_hash
+          vote_hash_with_padding += "=" * ((4 - len(voter.vote_hash) % 4) % 4)
+
+          if vote_from_blockchain_hash_with_padding == vote_hash_with_padding:
+
+            voters_dict[voter_blockchain] = vote_from_blockchain
+            tally.add_vote(voter.vote, verify_p=False)
+            print("Vote %s casted at %s and verified at %s" % (
+            vote_from_blockchain[0], vote_from_blockchain[1], vote_from_blockchain[2]))
+
+          else:
+            print("Vote not matching for user %s" % voter_blockchain)
+        else:
+          print('Vote unavailable for voter %s' % voter_blockchain)
+      else:
+        # Log this error or stop the tallying with error
+        print('ERROR with DB')
+
+    self.voters_who_voted_json = json.dumps(voters_dict, cls=DjangoJSONEncoder)
 
     self.encrypted_tally = tally
     self.save()    
@@ -1133,24 +1204,29 @@ class CastVote(HeliosModel):
     if result:
       self.verified_at = datetime.datetime.utcnow()
 
-      # send transaction with the vote valided
-      vote_hash_repadding = self.vote_hash
-      vote_hash_repadding += "=" * ((4 - len(self.vote_hash) % 4) % 4)
-      vote_hash = base64.b64decode(vote_hash_repadding)
+      try:
+        # send transaction with the vote valided
+        vote_hash_repadding = self.vote_hash
+        vote_hash_repadding += "=" * ((4 - len(self.vote_hash) % 4) % 4)
+        vote_hash = base64.b64decode(vote_hash_repadding)
 
-      election_contract = w3.eth.contract(address=election_contract_address, abi=election_contract_abi)
+        election_contract = w3.eth.contract(address=election_contract_address, abi=election_contract_abi)
 
-      cast_at_int = int(self.cast_at.timestamp())
-      verified_at_int = int(self.verified_at.timestamp())
-      uuid_hex = Web3.toHex(self.voter.uuid.replace("-", "").encode("utf-8"))
-      vote_hash_hex = Web3.toHex(vote_hash)
+        cast_at_int = int(self.cast_at.timestamp())
+        verified_at_int = int(self.verified_at.timestamp())
+        uuid_hex = Web3.toHex(self.voter.uuid.replace("-", "").encode("utf-8"))
+        vote_hash_hex = Web3.toHex(vote_hash)
 
-      gas_estimate = election_contract.functions.vote(uuid_hex, vote_hash_hex, cast_at_int, verified_at_int).estimateGas(
-        {'from': w3.eth.accounts[2]})
-      if gas_estimate < Web3.toWei('3', 'gwei'):
-        tx_hash_hex = election_contract.functions.vote(uuid_hex, vote_hash_hex, cast_at_int, verified_at_int).transact(
-          {'from': w3.eth.accounts[2]}).hex()
-        self.tx_hash = tx_hash_hex
+        gas_estimate = election_contract.functions.vote(uuid_hex, vote_hash_hex, cast_at_int, verified_at_int).estimateGas(
+          {'from': w3.eth.accounts[2]})
+        if gas_estimate < Web3.toWei('3', 'gwei'):
+          tx_hash_hex = election_contract.functions.vote(uuid_hex, vote_hash_hex, cast_at_int, verified_at_int).transact(
+            {'from': w3.eth.accounts[2]}).hex()
+          self.tx_hash = tx_hash_hex
+
+      except:
+        raise Exception('Error during casting the vote on blockchain')
+
 
     else:
       self.invalidated_at = datetime.datetime.utcnow()

@@ -1,7 +1,6 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-
 contract HeliosElection {
 
     struct Vote {
@@ -135,6 +134,10 @@ contract HeliosElection {
         newVote.alreadyVoted = true;
 
         votes[_uuid] = newVote;
+    }
+
+    function getVotersUUID() public view returns(bytes32[] memory) {
+        return votersWhoVoted;
     }
 
     function getVote(bytes32 _uuid) public view returns (bytes32 _hash, uint _castAt, uint _verifiedAt)  {
