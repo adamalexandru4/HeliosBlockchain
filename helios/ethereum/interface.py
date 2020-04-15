@@ -3,6 +3,7 @@ import os
 import pprint
 import json
 
+from django.conf import settings
 from hexbytes import HexBytes
 from web3 import Web3, HTTPProvider
 from solcx import compile_source, compile_files, set_solc_version
@@ -120,6 +121,50 @@ class ContractInterface(object):
                     json.dump(vars, write_file, indent=4)
 
                 print(f"Address and interface ABI for {self.contract_to_deploy} written to {self.deployment_vars_path}")
+
+    def set_deployed_contract(self, contract_address):
+        try:
+            self.all_compiled_contracts is not None
+        except AttributeError:
+            print("Source files not compiled, compiling now and trying again...")
+            self.compile_source_files()
+
+        try:
+            with open(self.deployment_vars_path, 'r') as read_file:
+                vars = json.load(read_file)
+
+            contract_address = vars['contract_address']
+            settings.HELIOS_ADMINISTRATOR_CONTRACT_ADDRESS = contract_address
+        except Exception as e:
+            if (len(contract_address) == 0):
+                self.deploy_contract({'from': settings.SERVER_NODE_ADDRESS})
+
+                with open(self.deployment_vars_path, 'r') as read_file:
+                    vars = json.load(read_file)
+
+                contract_address = vars['contract_address']
+                settings.HELIOS_ADMINISTRATOR_CONTRACT_ADDRESS = contract_address
+
+        for compiled_contract_key in self.all_compiled_contracts.keys():
+            if self.contract_to_deploy in compiled_contract_key:
+                deployment_compiled = self.all_compiled_contracts[compiled_contract_key]
+
+                vars = {
+                    'contract_address': contract_address,
+                    'contract_abi': deployment_compiled['abi']
+                }
+
+                try:
+                    self.contract_instance = self.web3.eth.contract(
+                        abi = vars['contract_abi'],
+                        address = vars['contract_address']
+                    )
+                except Exception as e:
+                    print(e)
+                    raise
+
+                with open (self.deployment_vars_path, 'w') as write_file:
+                    json.dump(vars, write_file, indent=4)
 
     def get_instance(self):
         """Returns a contract instance object from variables in 'deployment_vars'

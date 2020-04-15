@@ -1,5 +1,5 @@
 {
-    "contract_address": "0x098B44B5C7B62792127101234A67DFE8C57220A2",
+    "contract_address": "0x8B7E7086575cd096765e81B9dae25D0cEDE6695C",
     "contract_abi": [
         {
             "inputs": [],
@@ -14,6 +14,11 @@
                     "internalType": "address",
                     "name": "_electionAddress",
                     "type": "address"
+                },
+                {
+                    "internalType": "bytes32",
+                    "name": "_electionURL",
+                    "type": "bytes32"
                 }
             ],
             "name": "createElection",
@@ -26,12 +31,12 @@
             "constant": true,
             "inputs": [
                 {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
+                    "internalType": "bytes32",
+                    "name": "_electionURL",
+                    "type": "bytes32"
                 }
             ],
-            "name": "elections",
+            "name": "getElection",
             "outputs": [
                 {
                     "internalType": "address",

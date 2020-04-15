@@ -29,8 +29,13 @@ from helios.datatypes.djangofield import LDObjectField
 import csv, copy
 # import unicodecsv
 
+#######################
+# ETHEREUM            #
+#######################
 import base64
 from web3 import Web3, HTTPProvider
+
+w3 = Web3(HTTPProvider(settings.HTTP_PROVIDER_WEB3))
 
 # from helios.views import get_election_url
 
@@ -429,7 +434,6 @@ class Election(HeliosModel):
     return datetime.datetime.utcnow() >= self.tallying_starts_at
 
   def download_votes_from_blockchain(self, election_contract_abi):
-    w3 = Web3(HTTPProvider('http://127.0.0.1:8545'))
     election_contract = w3.eth.contract(address=self.contract_address, abi=election_contract_abi)
 
     voters_who_voted = election_contract.functions.getVotersUUID().call(
@@ -439,7 +443,6 @@ class Election(HeliosModel):
     return voters_who_voted_hex
 
   def get_vote_hash_from_blockchain(self, uuid_hex, election_contract_abi):
-    w3 = Web3(HTTPProvider('http://127.0.0.1:8545'))
     election_contract = w3.eth.contract(address=self.contract_address, abi=election_contract_abi)
 
     vote = election_contract.functions.getVote(uuid_hex).call(
@@ -1193,8 +1196,6 @@ class CastVote(HeliosModel):
     return cls.objects.filter(voter = voter).order_by('-cast_at')
 
   def verify_and_store(self, election_contract_address, election_contract_abi):
-    w3 = Web3(HTTPProvider('http://127.0.0.1:8545'))
-
     # if it's quarantined, don't let this go through
     if self.is_quarantined:
       raise Exception("cast vote is quarantined, verification and storage is delayed.")

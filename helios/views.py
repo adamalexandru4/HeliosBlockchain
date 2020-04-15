@@ -43,6 +43,7 @@ import json
 from . import datatypes
 from . import forms
 from django.apps import apps
+from django.conf import settings
 
 #############################
 # ETHEREUM                  #
@@ -52,8 +53,14 @@ from .ethereum.interface import ContractInterface
 from web3 import Web3, HTTPProvider
 from web3.exceptions import TransactionNotFound
 
-w3 = Web3(HTTPProvider('http://127.0.0.1:8545'))
-w3.eth.defaultAccount = w3.eth.accounts[0]
+w3 = Web3(HTTPProvider(settings.HTTP_PROVIDER_WEB3))
+w3.eth.defaultAccount = settings.SERVER_NODE_ADDRESS
+
+from helios.ethereum.AdministratorContractDeployWrapper import AdministratorContractDeployWrapper
+administratorContractDeployWrapper = AdministratorContractDeployWrapper.getInstance()
+administratorContractInstance = administratorContractDeployWrapper.set_deployed_contract_from_address(settings.HELIOS_ADMINISTRATOR_CONTRACT_ADDRESS);
+
+#########################################
 
 Election = apps.get_model('helios', 'Election')
 QuestionBlockchain = apps.get_model('helios', 'QuestionBlockchain')
@@ -75,8 +82,6 @@ ELGAMAL_PARAMS.g = 1488749222496318763428242153718604080130400801774349230448173
 ELGAMAL_PARAMS_LD_OBJECT = datatypes.LDObject.instantiate(ELGAMAL_PARAMS, datatype='legacy/EGParams')
 
 # single election server? Load the single electionfrom models import Election
-from django.conf import settings
-
 def get_election_url(election):
   return settings.URL_HOST + reverse(election_shortcut, args=[election.short_name])  
 
@@ -323,6 +328,7 @@ def election_badge(request, election):
 
 @election_view()
 def one_election_view(request, election):
+
   user = get_user(request)
   admin_p = user_can_admin_election(user, election)
   can_feature_p = user_can_feature_election(user, election)
@@ -774,8 +780,8 @@ def one_election_cast_confirm(request, election):
     else:
       status_update_message = None
 
-    election_contract_compiled = settings.COMPILE_ELECTION_CONTRACT.get(
-      settings.CONTRACTS_DIR + '/HeliosElection.sol:HeliosElection')
+    election_contract_compiled = settings.HELIOS_ELECTION_COMPILED_CONTRACT.get(
+                            settings.CONTRACTS_DIR + '/HeliosElection.sol:HeliosElection')
     election_contract_abi = election_contract_compiled.get('abi')
 
     # launch the verification task
@@ -1090,9 +1096,11 @@ def deployed_contract(request, election):
   if request.is_ajax and request.method == "POST":
     try:
       valid_address = w3.toChecksumAddress(request.POST['contractAddress'])
-      gas_estimate = settings.HELIOS_ADMINISTRATOR_CONTRACT_INSTANCE.functions.createElection(valid_address).estimateGas()
+      election_hex = Web3.keccak(text = election.uuid)
+
+      gas_estimate = administratorContractInstance.functions.createElection(valid_address, election_hex).estimateGas()
       if gas_estimate < 500000:
-        tx_hash = settings.HELIOS_ADMINISTRATOR_CONTRACT_INSTANCE.functions.createElection(valid_address).transact()
+        tx_hash = administratorContractInstance.functions.createElection(valid_address,election_hex).transact()
         receipt = w3.eth.waitForTransactionReceipt(tx_hash)
         print("Transaction receipt mined: \n")
         print(dict(receipt))
@@ -1171,7 +1179,7 @@ def one_election_deploy_contract(request, election):
   questions_blockchain = list(QuestionBlockchain.objects.all().filter(election = election).values())
 
   try:
-    election_contract = settings.COMPILE_ELECTION_CONTRACT.get(settings.CONTRACTS_DIR + '/HeliosElection.sol:HeliosElection')
+    election_contract = settings.HELIOS_ELECTION_COMPILED_CONTRACT.get(settings.CONTRACTS_DIR + '/HeliosElection.sol:HeliosElection')
     election_contract_abi_json = json.dumps(election_contract.get('abi'))
     election_contract_bytecode = election_contract.get('bin')
   except:
@@ -1294,7 +1302,7 @@ def one_election_compute_tally(request, election):
   election.tallying_started_at = datetime.datetime.utcnow()
   election.save()
 
-  election_contract_compiled = settings.COMPILE_ELECTION_CONTRACT.get(
+  election_contract_compiled = settings.HELIOS_ELECTION_COMPILED_CONTRACT.get(
     settings.CONTRACTS_DIR + '/HeliosElection.sol:HeliosElection')
   election_contract_abi = election_contract_compiled.get('abi')
 
