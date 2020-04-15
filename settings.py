@@ -423,17 +423,21 @@ if ROLLBAR_ACCESS_TOKEN:
 ##############################
 
 from web3 import Web3, HTTPProvider
+from web3.middleware import geth_poa_middleware
 from helios.ethereum.interface import ContractInterface
 
-HTTP_PROVIDER_WEB3 = 'http://127.0.0.1:8545'
-w3 = Web3(HTTPProvider(HTTP_PROVIDER_WEB3))
-SERVER_NODE_ADDRESS = w3.eth.accounts[2]
+HTTP_PROVIDER_WEB3 = 'https://rinkeby.infura.io/v3/eb4d0b19a4fc4af790ac1ba6ab6b6355'
+# HTTP_PROVIDER_WEB3 = 'http://127.0.0.1:8545'
+WEB3 = Web3(HTTPProvider(HTTP_PROVIDER_WEB3))
+WEB3.middleware_onion.inject(geth_poa_middleware, layer=0)
+# SERVER_NODE_ADDRESS = w3.eth.accounts[2]
+SERVER_NODE_ADDRESS = '0x1d5Fdd212C461861a10340bCc65aC9919b240Ef3'
 
 CONTRACTS_DIR = os.path.abspath(os.getcwd() + '/helios/ethereum/contracts/')
-HELIOS_ADMINISTRATOR_CONTRACT_INTERFACE = ContractInterface(w3, 'HeliosAdministrator', CONTRACTS_DIR)
-HELIOS_ADMINISTRATOR_CONTRACT_ADDRESS = "0x8B7E7086575cd096765e81B9dae25D0cEDE6695C"
+HELIOS_ADMINISTRATOR_CONTRACT_INTERFACE = ContractInterface(WEB3, 'HeliosAdministrator', CONTRACTS_DIR)
+HELIOS_ADMINISTRATOR_CONTRACT_ADDRESS = "0x5EB9342Ac973903A5a96583E0f4d4B5233Fb3d8b"
 
-HELIOS_ELECTION_CONTRACT_INTERFACE = ContractInterface(w3, 'HeliosElection', CONTRACTS_DIR)
+HELIOS_ELECTION_CONTRACT_INTERFACE = ContractInterface(WEB3, 'HeliosElection', CONTRACTS_DIR)
 
 HELIOS_ELECTION_CONTRACT_INTERFACE.compile_source_files()
 HELIOS_ELECTION_COMPILED_CONTRACT = HELIOS_ELECTION_CONTRACT_INTERFACE.all_compiled_contracts

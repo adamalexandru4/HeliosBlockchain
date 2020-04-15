@@ -49,7 +49,10 @@ class ContractInterface(object):
         self.max_deploy_gas = max_deploy_gas
         self.max_tx_gas = max_tx_gas
         self.deployment_vars_path = deployment_vars_path
-        self.web3.eth.defaultAccount = web3.eth.coinbase
+        # self.web3.eth.defaultAccount = web3.eth.coinbase
+
+    def setup_account_and_middleware(self):
+        self.web3.eth.defaultAccount = settings.SERVER_NODE_ADDRESS
 
     def compile_source_files(self):
         """Compiles 'contract_to_deploy' from specified contract.
@@ -59,7 +62,6 @@ class ContractInterface(object):
             self.all_compiled_contracts (dict): all the compiler outputs (abi, bin, ast...)
             for every contract in contract_directory
         """
-
         deployment_list = []
 
         for contract in os.listdir(self.contract_directory):
@@ -82,6 +84,7 @@ class ContractInterface(object):
             default deployment transaction parameters. See web3.py's
             eth.sendTransaction for more info.
         """
+        self.setup_account_and_middleware()
 
         try:
             self.all_compiled_contracts is not None
@@ -123,27 +126,13 @@ class ContractInterface(object):
                 print(f"Address and interface ABI for {self.contract_to_deploy} written to {self.deployment_vars_path}")
 
     def set_deployed_contract(self, contract_address):
+        self.setup_account_and_middleware()
+
         try:
             self.all_compiled_contracts is not None
         except AttributeError:
             print("Source files not compiled, compiling now and trying again...")
             self.compile_source_files()
-
-        try:
-            with open(self.deployment_vars_path, 'r') as read_file:
-                vars = json.load(read_file)
-
-            contract_address = vars['contract_address']
-            settings.HELIOS_ADMINISTRATOR_CONTRACT_ADDRESS = contract_address
-        except Exception as e:
-            if (len(contract_address) == 0):
-                self.deploy_contract({'from': settings.SERVER_NODE_ADDRESS})
-
-                with open(self.deployment_vars_path, 'r') as read_file:
-                    vars = json.load(read_file)
-
-                contract_address = vars['contract_address']
-                settings.HELIOS_ADMINISTRATOR_CONTRACT_ADDRESS = contract_address
 
         for compiled_contract_key in self.all_compiled_contracts.keys():
             if self.contract_to_deploy in compiled_contract_key:
@@ -175,6 +164,7 @@ class ContractInterface(object):
         Returns:
             self.contract_instance(class ContractInterface): see above
         """
+        self.setup_account_and_middleware()
 
         with open (self.deployment_vars_path, 'r') as read_file:
             vars = json.load(read_file)
@@ -224,6 +214,7 @@ class ContractInterface(object):
             transaction outputs
             cleaned_events(dict): optional output of cleaned event logs
         """
+        self.setup_account_and_middleware()
 
         fxn_to_call = getattr(self.contract_instance.functions, function_)
         built_fxn = fxn_to_call(*tx_args)
@@ -261,6 +252,7 @@ class ContractInterface(object):
 
     def retrieve (self, function_, *call_args, tx_params=None):
         """Contract.function.call() with cleaning"""
+        self.setup_account_and_middleware()
 
         fxn_to_call = getattr(self.contract_instance.functions, function_)
         built_fxn = fxn_to_call(*call_args)

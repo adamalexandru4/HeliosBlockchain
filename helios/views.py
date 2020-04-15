@@ -49,16 +49,21 @@ from django.conf import settings
 # ETHEREUM                  #
 #############################
 
-from .ethereum.interface import ContractInterface
+privateKey = open(os.path.abspath(os.getcwd() + '/private_key.txt'), "r").read()
+privateKeyBytes = bytes.fromhex(privateKey)
+
+
 from web3 import Web3, HTTPProvider
 from web3.exceptions import TransactionNotFound
 
-w3 = Web3(HTTPProvider(settings.HTTP_PROVIDER_WEB3))
-w3.eth.defaultAccount = settings.SERVER_NODE_ADDRESS
+w3 = settings.WEB3
 
 from helios.ethereum.AdministratorContractDeployWrapper import AdministratorContractDeployWrapper
 administratorContractDeployWrapper = AdministratorContractDeployWrapper.getInstance()
-administratorContractInstance = administratorContractDeployWrapper.set_deployed_contract_from_address(settings.HELIOS_ADMINISTRATOR_CONTRACT_ADDRESS);
+if (len(settings.HELIOS_ADMINISTRATOR_CONTRACT_ADDRESS) == 0):
+  raise Exception('You should deploy the manager smart contract and the address to the settings file')
+else:
+  administratorContractInstance = administratorContractDeployWrapper.set_deployed_contract_from_address(settings.HELIOS_ADMINISTRATOR_CONTRACT_ADDRESS);
 
 #########################################
 
@@ -1100,10 +1105,15 @@ def deployed_contract(request, election):
 
       gas_estimate = administratorContractInstance.functions.createElection(valid_address, election_hex).estimateGas()
       if gas_estimate < 500000:
-        tx_hash = administratorContractInstance.functions.createElection(valid_address,election_hex).transact()
-        receipt = w3.eth.waitForTransactionReceipt(tx_hash)
-        print("Transaction receipt mined: \n")
-        print(dict(receipt))
+
+        # can't move this logic in another task because it's not json serializable
+        register_election_txn = administratorContractInstance.functions.createElection(valid_address, election_hex).buildTransaction({
+          'nonce': w3.eth.getTransactionCount(settings.SERVER_NODE_ADDRESS),
+          'gasPrice': w3.eth.gasPrice,
+          'gas': gas_estimate
+        })
+
+        tasks.register_new_election_contract_blockchain.delay(register_election_txn, privateKey)
 
         election.deploy_transaction = request.POST['transactionHash']
         election.contract_address = request.POST['contractAddress']

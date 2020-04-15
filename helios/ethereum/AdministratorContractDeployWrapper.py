@@ -1,5 +1,6 @@
 from django.conf import settings
 from web3 import Web3, HTTPProvider
+from web3.middleware import geth_poa_middleware
 from helios.ethereum.interface import ContractInterface
 
 class AdministratorContractDeployWrapper:
@@ -7,6 +8,8 @@ class AdministratorContractDeployWrapper:
     __instance = None
 
     w3 = Web3(HTTPProvider(settings.HTTP_PROVIDER_WEB3))
+    w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+
     contractInterface = ContractInterface(w3, 'HeliosAdministrator', settings.CONTRACTS_DIR)
     contractInstance = None
 
@@ -20,7 +23,6 @@ class AdministratorContractDeployWrapper:
         if AdministratorContractDeployWrapper.__instance is None:
             AdministratorContractDeployWrapper.__instance = self
             self.contractInterface.compile_source_files()
-
 
     def set_deployed_contract_from_address(self, contract_address):
         if (self.contractInstance is None):

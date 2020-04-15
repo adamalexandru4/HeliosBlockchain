@@ -333,7 +333,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
 
             try {
               let payload = {
-                  data: election_bytecode,
+                  data: "0x" + election_bytecode,
                   arguments: ["{{election.name}}", web3.utils.asciiToHex("{{election.short_name}}"),
                                 created_date_uint, start_date_uint, end_date_uint, "{{server_node_address}}"]
               }
@@ -611,12 +611,6 @@ Registration for your election is currently <b>closed</b>, which means only the 
               if(currentIndex === 1 && newIndex === 2 && noQuestionsAdded != {{ election.questions|length }})
                   return false;
 
-<!--              if(currentIndex === 2 && newIndex === 3)-->
-<!--                if(publicElection)-->
-<!--                  return true;-->
-<!--                else if(electionVotersAdded == false)-->
-<!--                      return false;-->
-    
               console.log("new");
               return true;
           },
@@ -649,7 +643,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
           },
           onFinished: function (event, currentIndex)
           {
-              console("Submitted!");
+              console.log("Submitted!");
           }
       });
     </script>
