@@ -35,7 +35,7 @@ import csv, copy
 import base64
 from web3 import Web3, HTTPProvider
 
-w3 = Web3(HTTPProvider(settings.HTTP_PROVIDER_WEB3))
+w3 = settings.WEB3
 
 # from helios.views import get_election_url
 
@@ -437,7 +437,7 @@ class Election(HeliosModel):
     election_contract = w3.eth.contract(address=self.contract_address, abi=election_contract_abi)
 
     voters_who_voted = election_contract.functions.getVotersUUID().call(
-      {'from': w3.eth.accounts[2]})
+      {'from': settings.SERVER_NODE_ADDRESS})
 
     voters_who_voted_hex = ['0x' + voter.hex() for voter in voters_who_voted]
     return voters_who_voted_hex
@@ -446,7 +446,7 @@ class Election(HeliosModel):
     election_contract = w3.eth.contract(address=self.contract_address, abi=election_contract_abi)
 
     vote = election_contract.functions.getVote(uuid_hex).call(
-      {'from': w3.eth.accounts[2]})
+      {'from': settings.SERVER_NODE_ADDRESS})
 
     format_vote = []
     if vote:
@@ -1195,7 +1195,7 @@ class CastVote(HeliosModel):
   def get_by_voter(cls, voter):
     return cls.objects.filter(voter = voter).order_by('-cast_at')
 
-  def verify_and_store(self, election_contract_address, election_contract_abi):
+  def verify_and_store(self, election_contract_address, election_contract_abi, private_key):
     # if it's quarantined, don't let this go through
     if self.is_quarantined:
       raise Exception("cast vote is quarantined, verification and storage is delayed.")
@@ -1218,16 +1218,27 @@ class CastVote(HeliosModel):
         uuid_hex = Web3.toHex(self.voter.uuid.replace("-", "").encode("utf-8"))
         vote_hash_hex = Web3.toHex(vote_hash)
 
-        gas_estimate = election_contract.functions.vote(uuid_hex, vote_hash_hex, cast_at_int, verified_at_int).estimateGas(
-          {'from': w3.eth.accounts[2]})
+        gas_estimate = election_contract.functions.vote(uuid_hex,
+                                                        vote_hash_hex,
+                                                        cast_at_int,
+                                                        verified_at_int)\
+                                                  .estimateGas({'from': settings.SERVER_NODE_ADDRESS})
         if gas_estimate < Web3.toWei('3', 'gwei'):
-          tx_hash_hex = election_contract.functions.vote(uuid_hex, vote_hash_hex, cast_at_int, verified_at_int).transact(
-            {'from': w3.eth.accounts[2]}).hex()
-          self.tx_hash = tx_hash_hex
+          register_vote_txn = election_contract.functions.vote(uuid_hex,
+                                                         vote_hash_hex,
+                                                         cast_at_int,
+                                                         verified_at_int).buildTransaction({'nonce': w3.eth.getTransactionCount(settings.SERVER_NODE_ADDRESS),
+                                                                                            'gasPrice': w3.eth.gasPrice,
+                                                                                            'gas': gas_estimate})
+          private_key_bytes = bytes.fromhex(private_key)
+          signed_txn = w3.eth.account.sign_transaction(register_vote_txn, private_key=private_key_bytes)
+          signed_txn_hash = w3.eth.sendRawTransaction(signed_txn.rawTransaction)
 
-      except:
+          receipt = w3.eth.waitForTransactionReceipt(signed_txn_hash)
+          self.tx_hash = signed_txn_hash.hex()
+      except Exception as e:
+        print(e)
         raise Exception('Error during casting the vote on blockchain')
-
 
     else:
       self.invalidated_at = datetime.datetime.utcnow()

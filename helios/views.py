@@ -794,7 +794,8 @@ def one_election_cast_confirm(request, election):
       cast_vote_id = cast_vote.id,
       election_contract_address = election.contract_address,
       election_contract_abi = election_contract_abi,
-      status_update_message = status_update_message)
+      status_update_message = status_update_message,
+      private_key = privateKey)
 
     # remove the vote from the store
     del request.session['encrypted_vote']

@@ -17,9 +17,9 @@ from Crypto import Random
 from web3 import Web3, HTTPProvider
 
 @shared_task()
-def cast_vote_verify_and_store(cast_vote_id, election_contract_address, election_contract_abi, status_update_message=None, **kwargs):
+def cast_vote_verify_and_store(cast_vote_id, election_contract_address, election_contract_abi, private_key, status_update_message=None, **kwargs):
     cast_vote = CastVote.objects.get(id = cast_vote_id)
-    result = cast_vote.verify_and_store(election_contract_address, election_contract_abi)
+    result = cast_vote.verify_and_store(election_contract_address, election_contract_abi, private_key)
 
     voter = cast_vote.voter
     election = voter.election
@@ -68,6 +68,7 @@ def voters_notify(election_id, notification_template, extra_vars={}):
 def register_new_election_contract_blockchain(register_election_txn, private_key_bytes):
 
     private_key_bytes = bytes.fromhex(private_key_bytes)
+    w3 = settings.WEB3
 
     try:
         signed_txn = w3.eth.account.sign_transaction(register_election_txn, private_key=private_key_bytes)
