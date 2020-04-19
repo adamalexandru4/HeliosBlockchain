@@ -10,7 +10,7 @@ class AdministratorContractDeployWrapper:
     w3 = Web3(HTTPProvider(settings.HTTP_PROVIDER_WEB3))
     w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
-    contractInterface = ContractInterface(w3, 'HeliosAdministrator', settings.CONTRACTS_DIR)
+    contractInterface = ContractInterface(w3, 'HeliosManager', settings.CONTRACTS_DIR)
     contractInstance = None
 
     @staticmethod

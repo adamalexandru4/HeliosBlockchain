@@ -1,6 +1,6 @@
-pragma solidity ^0.5.16;
+pragma solidity 0.6.6;
 
-contract HeliosAdministrator {
+contract HeliosManager {
     mapping(bytes32 => address) elections;
     address owner;
 

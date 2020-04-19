@@ -1,14 +1,12 @@
 {
-    "contract_address": "0x5EB9342Ac973903A5a96583E0f4d4B5233Fb3d8b",
+    "contract_address": "0x8BBc43225D1E4e2b1dB0ee89aACe9281da9b0539",
     "contract_abi": [
         {
             "inputs": [],
-            "payable": false,
             "stateMutability": "nonpayable",
             "type": "constructor"
         },
         {
-            "constant": false,
             "inputs": [
                 {
                     "internalType": "address",
@@ -23,12 +21,10 @@
             ],
             "name": "createElection",
             "outputs": [],
-            "payable": false,
             "stateMutability": "nonpayable",
             "type": "function"
         },
         {
-            "constant": true,
             "inputs": [
                 {
                     "internalType": "bytes32",
@@ -44,7 +40,6 @@
                     "type": "address"
                 }
             ],
-            "payable": false,
             "stateMutability": "view",
             "type": "function"
         }

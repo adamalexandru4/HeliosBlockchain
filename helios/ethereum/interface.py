@@ -40,7 +40,7 @@ class ContractInterface(object):
         """
 
         # SETUP solc version
-        set_solc_version('v0.5.16')
+        set_solc_version('v0.6.6')
 
         self.all_compiled_contracts = None
         self.web3 = web3

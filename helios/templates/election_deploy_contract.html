@@ -303,7 +303,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
                                 gasPrice: web3.utils.toHex(web3.utils.toWei('3', 'gwei'))
                             });
 
-          electionContract.methods.getNoQuestions().call({from: currentAccount})
+          electionContract.methods.noQuestions().call({from: currentAccount})
             .then((result) => {
               console.log(result + " questions already registered");
               for(var i = 0; i < result; i ++) {
@@ -408,7 +408,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
           
           var voters_uuids = [];
           voters.forEach(function(item){
-            voters_uuids.push(item.uuid_hex)
+            voters_uuids.push(item.user_id_hash)
           });
 
           myContract.methods.addEligibleVoters(voters_uuids)
@@ -521,7 +521,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
             .send({from: currentAccount})
             .on('error', function(error, receipt) {
 
-              myContract.methods.questionNames(questionNo-1).call({from: currentAccount})
+              myContract.methods.questionsRegistered(question.question).call({from: currentAccount})
                 .then((result) => {
                   if(result == question.question)
                   {
@@ -531,7 +531,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
                   }
                   else
                   {
-                    alert(error);
+                    alert("There was a problem with the transaction. It was rejected!");
                   }
                 });
             }).on('transactionHash', function(transactionHash){
@@ -574,7 +574,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
         dataTable = $("#table_id").DataTable({
           data: voters,
           columns: [
-            { title: "UUID", data:"uuid_hex" },
+            { title: "UUID", data:"user_id_hash" },
             { title: "Name", data:"voter_name", "css": { "width": "200px"} },
             { title: "Email", data:"voter_email" },
             { title: "Alias", data:"alias" }

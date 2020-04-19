@@ -1,6 +1,4 @@
-pragma solidity ^0.5.16;
-pragma experimental ABIEncoderV2;
-
+pragma solidity 0.6.6;
 contract HeliosElection {
 
     struct Vote {
@@ -11,11 +9,12 @@ contract HeliosElection {
     }
 
     struct Question {
+        mapping(uint => bytes32) answers;
+        uint noAnswers;
+        string question;
         int min;
         int max;
-        bytes32[] answers;
         bytes32 resultType;
-        bool registered;
     }
 
     string public name;
@@ -25,9 +24,10 @@ contract HeliosElection {
     address owner;
     address serverNodeAddr;
 
-    mapping(string => Question) questions;
-    string[] public questionNames;
-
+    mapping(string => bool) public questionsRegistered;
+    mapping(uint => Question) questions;
+    uint public noQuestions;
+    
     mapping(bytes32 => bool) eligibleVoters;
     mapping(bytes32 => Vote) public votes;
     bytes32[] public votersWhoVoted;
@@ -50,6 +50,7 @@ contract HeliosElection {
 
         isElectionPublic = true;
         serverNodeAddr = _serverNodeAddr;
+        noQuestions = 0;
 
         createdAt = _createdAt;
         startAt = _startAt;
@@ -81,24 +82,38 @@ contract HeliosElection {
         return eligibleVoters[_uuid];
     }
 
-    function getNoQuestions() public view returns(uint) {
-        return questionNames.length;
-    }
-
     function addQuestion(string memory _name, bytes32[] memory _answers, int _min, int _max, bytes32 _type) public onlyOwner {
         require(!questionsAdded, "You cannot add more questions");
-        require(questions[_name].registered == false, "Question already registered");
+        require(questionsRegistered[_name] == false, "Question already registered");
 
-        Question memory newQuestion;
-        newQuestion.min = _min;
-        newQuestion.max = _max;
-        newQuestion.resultType = _type;
-        newQuestion.answers = _answers;
-        newQuestion.registered = true;
-        questions[_name] = newQuestion;
+        questions[noQuestions].question = _name;
+        questions[noQuestions].min = _min;
+        questions[noQuestions].max = _max;
+        questions[noQuestions].resultType = _type;
+        questions[noQuestions].noAnswers = _answers.length;
+        
+        for(uint i = 0; i < _answers.length; i ++) {
+            questions[noQuestions].answers[i] = _answers[i];
+        }
+        
+        questionsRegistered[_name] = true;
+        noQuestions++;
 
-        questionNames.push(_name);
     }
+    
+    function getQuestion(uint256 _questionId) public view returns (string memory _name, int _min, int _max, bytes32 _type, bytes32[] memory _answers) {
+                
+        Question storage question = questions[_questionId];
+                
+        bytes32[] memory answers = new bytes32[](question.noAnswers);
+        
+        for(uint i = 0; i < question.noAnswers; i ++) {
+            answers[i] = question.answers[i];
+        }
+        
+        return (question.question, question.min, question.max, question.resultType, answers);
+    }
+    
 
     function freezeTheElection() public onlyOwner {
         require(!questionsAdded, "All questions have been already added");

@@ -173,7 +173,7 @@ def _castvote_shortcut_by_election(request, election, cast_vote):
   return render_template(request, 'castvote', {'cast_vote' : cast_vote,
                                                'vote_content': cast_vote.vote.toJSON(),
                                                'the_voter': cast_vote.voter,
-                                               'voter_uuid_hex': cast_vote.voter.uuid_hex,
+                                               'voter_id_hash': cast_vote.voter.user_id_hash,
                                                'election': election})
   
 def castvote_shortcut(request, vote_tinyhash):
@@ -816,7 +816,7 @@ def one_election_cast_done(request, election):
     votes = CastVote.get_by_voter(voter)
     vote_hash = votes[0].vote_hash
     cv_url = get_castvote_url(votes[0])
-    voter_uuid_hex = voter.uuid_hex
+    voter_id_hash = voter.user_id_hash
 
     # only log out if the setting says so *and* we're dealing
     # with a site-wide voter. Definitely remove current_voter
@@ -829,12 +829,12 @@ def one_election_cast_done(request, election):
 
 
     save_in_session_across_logouts(request, 'last_vote_hash', vote_hash)
-    save_in_session_across_logouts(request, 'voter_uuid_hex', voter_uuid_hex)
+    save_in_session_across_logouts(request, 'voter_id_hash', voter_id_hash)
     save_in_session_across_logouts(request, 'last_vote_cv_url', cv_url)
   else:
     vote_hash = request.session['last_vote_hash']
     cv_url = request.session['last_vote_cv_url']
-    voter_uuid_hex = request.session['voter_uuid_hex']
+    voter_id_hash = request.session['voter_id_hash']
     logout = False
   
   # local logout ensures that there's no more
@@ -847,7 +847,7 @@ def one_election_cast_done(request, election):
   # remote logout is happening asynchronously in an iframe to be modular given the logout mechanism
   # include_user is set to False if logout is happening
   return render_template(request, 'cast_done', {'election': election,
-                                                'voter_uuid_hex': voter_uuid_hex,
+                                                'voter_id_hash': voter_id_hash,
                                                 'go_vote_url': get_election_govote_url(election),
                                                 'vote_hash': vote_hash, 'logout': logout},
                          include_user=(not logout))
@@ -1218,7 +1218,7 @@ def one_election_deploy_contract(request, election):
 
       # load a bunch of voters
       # voters = Voter.get_by_election(election, order_by=order_by)
-      voters = Voter.objects.filter(election = election).order_by(order_by).defer('vote').values('uuid_hex', 'voter_name', 'voter_email', 'alias')
+      voters = Voter.objects.filter(election = election).order_by(order_by).defer('vote').values('user_id_hash', 'voter_name', 'voter_email', 'alias')
       
       voters_json = json.dumps(list(voters))
 

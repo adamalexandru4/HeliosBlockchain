@@ -48,7 +48,7 @@
     var noAnswersListed = 0;
     var noRows = noAnswers / noCols;
 
-    questionBody += `<div class="container">`;
+    questionBody += `<div class="container" style="height: 47vh;">`;
     for(var row = 0; row < noRows; row++) {
       if(indexAnswer < noAnswers) {
         questionBody += `<div class="d-flex justify-content-around">`;
@@ -100,7 +100,7 @@
           colDim = 4;
 
     questionBody += `
-      <div class="row align-items-end justify-content-end" style="height: 45vh;">
+      <div class="row align-items-end justify-content-end">
         <div class="col-${12 - colDim}">
           <h6 class="text-muted">#${question_num + 1} of ${last_question_num + 1} &mdash; vote for`;
 

@@ -442,10 +442,10 @@ class Election(HeliosModel):
     voters_who_voted_hex = ['0x' + voter.hex() for voter in voters_who_voted]
     return voters_who_voted_hex
 
-  def get_vote_hash_from_blockchain(self, uuid_hex, election_contract_abi):
+  def get_vote_hash_from_blockchain(self, user_id_hash, election_contract_abi):
     election_contract = w3.eth.contract(address=self.contract_address, abi=election_contract_abi)
 
-    vote = election_contract.functions.getVote(uuid_hex).call(
+    vote = election_contract.functions.getVote(user_id_hash).call(
       {'from': settings.SERVER_NODE_ADDRESS})
 
     format_vote = []
@@ -474,7 +474,7 @@ class Election(HeliosModel):
     for voter_blockchain in voters_who_voted_hex:
 
       try:
-        voter = self.voter_set.get(uuid_hex = voter_blockchain)
+        voter = self.voter_set.get(user_id_hash = voter_blockchain)
       except Voter.MultipleObjectsReturned:
         print('More voters with the same UUID exists in the DB')
         return
@@ -897,9 +897,9 @@ class VoterFile(models.Model):
       if not existing_voter:
 
         voter_uuid = str(uuid.uuid4())
-        voter_uuid_hex = Web3.toHex(text=voter_uuid.replace("-",""))
+        user_id_hash = Web3.keccak(text=voter['email']).hex()
 
-        existing_voter = Voter(uuid= voter_uuid, uuid_hex=voter_uuid_hex,user = None, voter_login_id = voter['voter_id'],
+        existing_voter = Voter(uuid= voter_uuid, user_id_hash=user_id_hash, user = None, voter_login_id = voter['voter_id'],
                       voter_name = voter['name'], voter_email = voter['email'], election = election)
         existing_voter.generate_password()
         new_voters.append(existing_voter)
@@ -928,7 +928,7 @@ class Voter(HeliosModel):
   #voter_id = models.CharField(max_length = 100)
 
   uuid = models.CharField(max_length = 50)
-  uuid_hex = models.CharField(max_length = 100)
+  user_id_hash = models.CharField(max_length = 100)
 
   # for users of type password, no user object is created
   # but a dynamic user object is created automatically
@@ -965,9 +965,9 @@ class Voter(HeliosModel):
   def register_user_in_election(cls, user, election):
 
     voter_uuid = str(uuid.uuid4())
-    voter_uuid_hex = Web3.toHex(text=voter_uuid.replace("-",""))
+    user_id_hash = Web3.keccak(text=user.user_id).hex()
 
-    voter = Voter(uuid= voter_uuid, uuid_hex = voter_uuid_hex, user = user, election = election)
+    voter = Voter(uuid= voter_uuid, user_id_hash = user_id_hash, user = user, election = election)
 
     # do we need to generate an alias?
     if election.use_voter_aliases:
@@ -1215,16 +1215,15 @@ class CastVote(HeliosModel):
 
         cast_at_int = int(self.cast_at.timestamp())
         verified_at_int = int(self.verified_at.timestamp())
-        uuid_hex = Web3.toHex(self.voter.uuid.replace("-", "").encode("utf-8"))
         vote_hash_hex = Web3.toHex(vote_hash)
 
-        gas_estimate = election_contract.functions.vote(uuid_hex,
+        gas_estimate = election_contract.functions.vote(self.voter.user_id_hash,
                                                         vote_hash_hex,
                                                         cast_at_int,
                                                         verified_at_int)\
                                                   .estimateGas({'from': settings.SERVER_NODE_ADDRESS})
         if gas_estimate < Web3.toWei('3', 'gwei'):
-          register_vote_txn = election_contract.functions.vote(uuid_hex,
+          register_vote_txn = election_contract.functions.vote(self.voter.user_id_hash,
                                                          vote_hash_hex,
                                                          cast_at_int,
                                                          verified_at_int).buildTransaction({'nonce': w3.eth.getTransactionCount(settings.SERVER_NODE_ADDRESS),
