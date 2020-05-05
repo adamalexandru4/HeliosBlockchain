@@ -683,7 +683,7 @@ def one_election_cast_confirm(request, election):
     return render_template(request, 'election_tallied', {'election': election})
     
   encrypted_vote = request.session['encrypted_vote']
-  vote_fingerprint = cryptoutils.hash_b64(encrypted_vote)
+  vote_fingerprint = cryptoutils.hash_b64(encrypted_vote.strip())
 
   # if this user is a voter, prepare some stuff
   if voter:
@@ -846,10 +846,18 @@ def one_election_cast_done(request, election):
 
   # remote logout is happening asynchronously in an iframe to be modular given the logout mechanism
   # include_user is set to False if logout is happening
+
+  vote_hash_repadding = vote_hash
+  vote_hash_repadding += "=" * ((4 - len(vote_hash) % 4) % 4)
+  vote_hash_repadding_decoded = base64.b64decode(vote_hash_repadding)
+  vote_hash_hex = Web3.toHex(vote_hash_repadding_decoded)
+
   return render_template(request, 'cast_done', {'election': election,
                                                 'voter_id_hash': voter_id_hash,
                                                 'go_vote_url': get_election_govote_url(election),
-                                                'vote_hash': vote_hash, 'logout': logout},
+                                                'vote_hash': vote_hash,
+                                                'vote_hash_hex': vote_hash_hex,
+                                                'logout': logout},
                          include_user=(not logout))
 
 @election_view()

@@ -1204,43 +1204,46 @@ class CastVote(HeliosModel):
 
     if result:
       self.verified_at = datetime.datetime.utcnow()
-
-      try:
-        # send transaction with the vote valided
-        vote_hash_repadding = self.vote_hash
-        vote_hash_repadding += "=" * ((4 - len(self.vote_hash) % 4) % 4)
-        vote_hash = base64.b64decode(vote_hash_repadding)
-
-        election_contract = w3.eth.contract(address=election_contract_address, abi=election_contract_abi)
-
-        cast_at_int = int(self.cast_at.timestamp())
-        verified_at_int = int(self.verified_at.timestamp())
-        vote_hash_hex = Web3.toHex(vote_hash)
-
-        gas_estimate = election_contract.functions.vote(self.voter.user_id_hash,
-                                                        vote_hash_hex,
-                                                        cast_at_int,
-                                                        verified_at_int)\
-                                                  .estimateGas({'from': settings.SERVER_NODE_ADDRESS})
-        if gas_estimate < Web3.toWei('3', 'gwei'):
-          register_vote_txn = election_contract.functions.vote(self.voter.user_id_hash,
-                                                         vote_hash_hex,
-                                                         cast_at_int,
-                                                         verified_at_int).buildTransaction({'nonce': w3.eth.getTransactionCount(settings.SERVER_NODE_ADDRESS),
-                                                                                            'gasPrice': w3.eth.gasPrice,
-                                                                                            'gas': gas_estimate})
-          private_key_bytes = bytes.fromhex(private_key)
-          signed_txn = w3.eth.account.sign_transaction(register_vote_txn, private_key=private_key_bytes)
-          signed_txn_hash = w3.eth.sendRawTransaction(signed_txn.rawTransaction)
-
-          receipt = w3.eth.waitForTransactionReceipt(signed_txn_hash)
-          self.tx_hash = signed_txn_hash.hex()
-      except Exception as e:
-        print(e)
-        raise Exception('Error during casting the vote on blockchain')
-
     else:
       self.invalidated_at = datetime.datetime.utcnow()
+
+    try:
+      # send transaction with the vote valided
+      vote_hash_repadding = self.vote_hash
+      vote_hash_repadding += "=" * ((4 - len(self.vote_hash) % 4) % 4)
+      vote_hash = base64.b64decode(vote_hash_repadding)
+
+      election_contract = w3.eth.contract(address=election_contract_address, abi=election_contract_abi)
+
+      cast_at_int = int(self.cast_at.timestamp())
+      if result:
+        verified_at_int = int(self.verified_at.timestamp())
+      else:
+        verified_at_int = 0
+      vote_hash_hex = Web3.toHex(vote_hash)
+
+      gas_estimate = election_contract.functions.vote(self.voter.user_id_hash,
+                                                      vote_hash_hex,
+                                                      cast_at_int,
+                                                      verified_at_int) \
+        .estimateGas({'from': settings.SERVER_NODE_ADDRESS})
+      if gas_estimate < Web3.toWei('3', 'gwei'):
+        register_vote_txn = election_contract.functions.vote(self.voter.user_id_hash,
+                                                             vote_hash_hex,
+                                                             cast_at_int,
+                                                             verified_at_int).buildTransaction(
+          {'nonce': w3.eth.getTransactionCount(settings.SERVER_NODE_ADDRESS),
+           'gasPrice': w3.eth.gasPrice,
+           'gas': gas_estimate})
+        private_key_bytes = bytes.fromhex(private_key)
+        signed_txn = w3.eth.account.sign_transaction(register_vote_txn, private_key=private_key_bytes)
+        signed_txn_hash = w3.eth.sendRawTransaction(signed_txn.rawTransaction)
+
+        receipt = w3.eth.waitForTransactionReceipt(signed_txn_hash)
+        self.tx_hash = signed_txn_hash.hex()
+    except Exception as e:
+      print(e)
+      raise Exception('Error during casting the vote on blockchain')
       
     # save and store the vote as the voter's last cast vote
     self.save()

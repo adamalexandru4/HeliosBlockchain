@@ -12,7 +12,9 @@ chardet==3.0.4
 cytoolz==0.10.1
 defusedxml==0.6.0
 Django==2.2.10
+django-qr-code==1.2.0
 django-webtest==1.9.7
+django-widget-tweaks==1.4.8
 eth-abi==2.1.1
 eth-account==0.4.0
 eth-hash==0.2.0
@@ -42,9 +44,11 @@ py-solc-x==0.8.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pycryptodome==3.9.7
+PyQRCode==1.2.1
 pyrsistent==0.15.7
 python3-openid==3.1.0
 pytz==2019.3
+qrcode==6.1
 requests==2.23.0
 rlp==1.2.0
 rollbar==0.12.1

@@ -200,7 +200,8 @@ INSTALLED_APPS = (
     ## HELIOS stuff
     'helios_auth',
     'helios',
-    'server_ui'
+    'server_ui',
+    'qr_code'
 )
 
 
