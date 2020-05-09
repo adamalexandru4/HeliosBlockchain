@@ -2,8 +2,8 @@
 
 {% block title %}{{cast_vote.vote_tinyhash}} &mdash; {{election.name}}{% endblock %}
 {% block content %}
-<h2 class="title">Cast Vote {{cast_vote.vote_tinyhash}}</h2>
-cast in <a href="{% url "one-election-view" election.uuid %}">{{election.name}}</a><br />
+<h2 class="title">Tiny Vote {{cast_vote.vote_tinyhash}}</h2>
+Cast in <a href="{% url "one-election-view" election.uuid %}">{{election.name}}</a><br />
 Fingerprint: <tt>{{cast_vote.vote_hash}}</tt><br />
 by <b><u>
 {% if the_voter.alias %}
@@ -12,18 +12,17 @@ by <b><u>
 {{the_voter.name}}
 {% endif %}
 </u></b>
-<br />
-Transaction Hash: <b>{{cast_vote.tx_hash}}</b><br />
-Voter email keccak-256 hash: <b>{{voter_id_hash}}</b><br />
 <br /><br />
-<a href="#" onclick="document.getElementById('castvote_content').setAttribute('style', 'display: block;'); return false;">details</a><br /><br />
-<div style="display:none;" id="castvote_content">
-<textarea cols="100" rows="10">
+Fingerprint HEX: <span style="font-weight: bold">{{fingerprint_hex}}</span><br />
+Transaction Hash: <span style="font-weight: bold">{{cast_vote.tx_hash}}</span><br />
+Voter ID (Keccak-256 hash): <span style="font-weight: bold">{{voter_id_hash}}</span><br />
+<br />
+<a class="btn btn-info" data-toggle="collapse" href="#castvote_content" role="button" aria-expanded="false" aria-controls="castvote_content">details</a><br /><br />
+<div id="castvote_content" class="collapse">
+<textarea cols="100" rows="10" style="height: auto;">
 {{vote_content}}
 </textarea>
 </div>
-<br /><br />
-
 
 
 

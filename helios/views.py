@@ -49,11 +49,10 @@ from django.conf import settings
 # ETHEREUM                  #
 #############################
 
-privateKey = open(os.path.abspath(os.getcwd() + '/private_key.txt'), "r").read()
+privateKey = open(settings.PRIVATE_KEY_FILE, "r").read()
 privateKeyBytes = bytes.fromhex(privateKey)
 
-
-from web3 import Web3, HTTPProvider
+from web3 import Web3
 from web3.exceptions import TransactionNotFound
 
 w3 = settings.WEB3
@@ -63,7 +62,7 @@ administratorContractDeployWrapper = AdministratorContractDeployWrapper.getInsta
 if (len(settings.HELIOS_ADMINISTRATOR_CONTRACT_ADDRESS) == 0):
   raise Exception('You should deploy the manager smart contract and the address to the settings file')
 else:
-  administratorContractInstance = administratorContractDeployWrapper.set_deployed_contract_from_address(settings.HELIOS_ADMINISTRATOR_CONTRACT_ADDRESS);
+  administratorContractInstance = administratorContractDeployWrapper.set_deployed_contract_from_address(settings.HELIOS_ADMINISTRATOR_CONTRACT_ADDRESS)
 
 #########################################
 
@@ -174,7 +173,8 @@ def _castvote_shortcut_by_election(request, election, cast_vote):
                                                'vote_content': cast_vote.vote.toJSON(),
                                                'the_voter': cast_vote.voter,
                                                'voter_id_hash': cast_vote.voter.user_id_hash,
-                                               'election': election})
+                                               'election': election,
+                                               'fingerprint_hex': utils.get_vote_hash_hex(cast_vote.vote_hash)})
   
 def castvote_shortcut(request, vote_tinyhash):
   try:
@@ -292,23 +292,6 @@ def one_election_edit(request, election):
 def one_election_schedule(request, election):
   return HttpResponse("foo")
 
-@election_admin()
-def one_election_extend(request, election):
-  if request.method == "GET":
-    election_form = forms.ElectionTimeExtensionForm({'voting_extended_until': election.voting_extended_until})
-  else:
-    check_csrf(request)
-    election_form = forms.ElectionTimeExtensionForm(request.POST)
-
-    if election_form.is_valid():
-      clean_data = election_form.cleaned_data
-      election.voting_extended_until = clean_data['voting_extended_until']
-      election.save()
-        
-      return HttpResponseRedirect(settings.SECURE_URL_HOST + reverse(one_election_view, args=[election.uuid]))
-  
-  return render_template(request, "election_extend", {'election_form' : election_form, 'election' : election})
-
 @election_view()
 @return_json
 def one_election(request, election):
@@ -333,7 +316,6 @@ def election_badge(request, election):
 
 @election_view()
 def one_election_view(request, election):
-
   user = get_user(request)
   admin_p = user_can_admin_election(user, election)
   can_feature_p = user_can_feature_election(user, election)
@@ -1303,7 +1285,7 @@ def one_election_compute_tally(request, election):
 
   if request.method == "GET":
     # Check if last transaction is mined
-    last_vote = Voter.objects.filter(election_id=election.id).order_by('-cast_at')[0]
+    last_vote = Voter.objects.filter(election_id=election.id).filter(vote_hash__isnull=False).order_by('-cast_at')[0]
 
     try:
       transaction_receipt = w3.eth.getTransaction(last_vote.tx_hash)

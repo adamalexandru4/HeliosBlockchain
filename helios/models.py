@@ -368,7 +368,7 @@ class Election(HeliosModel):
     has voting stopped? if tally computed, yes, otherwise if we have passed the date voting was manually stopped at,
     or failing that the date voting was extended until, or failing that the date voting is scheduled to end at.
     """
-    voting_end = self.voting_ended_at or self.voting_extended_until or self.voting_ends_at
+    voting_end = self.voting_ended_at or self.voting_ends_at
     return (voting_end != None and datetime.datetime.utcnow() >= voting_end) or self.encrypted_tally
 
   @property
@@ -433,7 +433,7 @@ class Election(HeliosModel):
   def ready_for_tallying(self):
     return datetime.datetime.utcnow() >= self.tallying_starts_at
 
-  def download_votes_from_blockchain(self, election_contract_abi):
+  def download_voters_from_blockchain(self, election_contract_abi):
     election_contract = w3.eth.contract(address=self.contract_address, abi=election_contract_abi)
 
     voters_who_voted = election_contract.functions.getVotersUUID().call(
@@ -468,7 +468,7 @@ class Election(HeliosModel):
     tally = self.init_tally()
 
     # Download votes from blockchain
-    voters_who_voted_hex = self.download_votes_from_blockchain(election_contract_abi)
+    voters_who_voted_hex = self.download_voters_from_blockchain(election_contract_abi)
     voters_dict = dict.fromkeys(voters_who_voted_hex)
 
     for voter_blockchain in voters_who_voted_hex:
@@ -493,7 +493,8 @@ class Election(HeliosModel):
           vote_hash_with_padding = voter.vote_hash
           vote_hash_with_padding += "=" * ((4 - len(voter.vote_hash) % 4) % 4)
 
-          if vote_from_blockchain_hash_with_padding == vote_hash_with_padding:
+          if (vote_from_blockchain_hash_with_padding == vote_hash_with_padding and
+              datetime.datetime.fromtimestamp(0) != vote_from_blockchain[2]):
 
             voters_dict[voter_blockchain] = vote_from_blockchain
             tally.add_vote(voter.vote, verify_p=False)
@@ -1204,30 +1205,31 @@ class CastVote(HeliosModel):
 
     if result:
       self.verified_at = datetime.datetime.utcnow()
-    else:
       self.invalidated_at = datetime.datetime.utcnow()
 
     try:
       # send transaction with the vote valided
-      vote_hash_repadding = self.vote_hash
-      vote_hash_repadding += "=" * ((4 - len(self.vote_hash) % 4) % 4)
-      vote_hash = base64.b64decode(vote_hash_repadding)
-
+      vote_hash_hex = heliosutils.get_vote_hash_hex(self.vote_hash)
       election_contract = w3.eth.contract(address=election_contract_address, abi=election_contract_abi)
+
+      #TODO: Bug with verification time
+      verified_at_now = self.verified_at + datetime.timedelta(hours=3)
 
       cast_at_int = int(self.cast_at.timestamp())
       if result:
-        verified_at_int = int(self.verified_at.timestamp())
+        verified_at_int = int(verified_at_now.timestamp())
       else:
         verified_at_int = 0
-      vote_hash_hex = Web3.toHex(vote_hash)
+
+      if cast_at_int == verified_at_int:
+        verified_at_int += 1
 
       gas_estimate = election_contract.functions.vote(self.voter.user_id_hash,
                                                       vote_hash_hex,
                                                       cast_at_int,
                                                       verified_at_int) \
         .estimateGas({'from': settings.SERVER_NODE_ADDRESS})
-      if gas_estimate < Web3.toWei('3', 'gwei'):
+      if gas_estimate < Web3.toWei('5', 'gwei'):
         register_vote_txn = election_contract.functions.vote(self.voter.user_id_hash,
                                                              vote_hash_hex,
                                                              cast_at_int,

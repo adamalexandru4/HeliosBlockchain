@@ -18,7 +18,6 @@ urlpatterns = [
     # edit election params
     re_path(r'^edit$', one_election_edit, name='one-election-edit'),
     re_path(r'^schedule$', one_election_schedule, name='one-election-schedule'),
-    re_path(r'^extend$', one_election_extend, name='one-election-extend'),
     re_path(r'^archive$', one_election_archive, name='one-election-archive'),
     re_path(r'^copy$', one_election_copy, name='one-election-copy'),
     re_path(r'^freeze', one_election_freeze, name='one-election-freeze'),

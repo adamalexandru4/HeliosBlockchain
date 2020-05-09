@@ -19,6 +19,18 @@ from django.conf import settings
   
 import random, logging
 
+from web3 import Web3
+import base64
+
+##
+## Ethereum conversions
+##
+def get_vote_hash_hex(vote_hash):
+    vote_hash_repadding = vote_hash
+    vote_hash_repadding += "=" * ((4 - len(vote_hash) % 4) % 4)
+    vote_hash_repadding_decoded = base64.b64decode(vote_hash_repadding)
+    vote_hash_hex = Web3.toHex(vote_hash_repadding_decoded)
+    return vote_hash_hex
 
 def split_by_length(str, length, rejoin_with=None):
   """
@@ -34,8 +46,10 @@ def split_by_length(str, length, rejoin_with=None):
     return rejoin_with.join(str_arr)
   else:
     return str_arr
-    
 
+##
+## URL
+##
 def urlencode(str):
     """
     URL encode

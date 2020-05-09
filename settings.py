@@ -234,8 +234,7 @@ TEMPLATES = [
 # although not all choices may be available on all operating systems.
 # If running in a Windows environment this must be set to the same as your
 # system time zone.
-TIME_ZONE = 'America/Los_Angeles'
-
+TIME_ZONE = 'Europe/Bucharest'
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
 LANGUAGE_CODE = 'en-us'
@@ -374,6 +373,8 @@ CELERY_BROKER_URL = 'amqp://localhost'
 CELERY_RESULT_BACKEND = 'rpc://'
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
+CELERY_ENABLE_UTC = False
+CELERY_TIMEZONE = 'Europe/Bucharest'
 # # App instance to use (value for --app argument).
 # CELERY_APP="helios"
 # # Absolute or relative path to the celery program.
@@ -427,12 +428,16 @@ from web3 import Web3, HTTPProvider
 from web3.middleware import geth_poa_middleware
 from helios.ethereum.interface import ContractInterface
 
+##### INFURA
 HTTP_PROVIDER_WEB3 = 'https://rinkeby.infura.io/v3/eb4d0b19a4fc4af790ac1ba6ab6b6355'
-# HTTP_PROVIDER_WEB3 = 'http://127.0.0.1:8545'
 WEB3 = Web3(HTTPProvider(HTTP_PROVIDER_WEB3))
 WEB3.middleware_onion.inject(geth_poa_middleware, layer=0)
-# SERVER_NODE_ADDRESS = w3.eth.accounts[2]
 SERVER_NODE_ADDRESS = '0x1d5Fdd212C461861a10340bCc65aC9919b240Ef3'
+PRIVATE_KEY_FILE = os.path.abspath(os.getcwd() + '/private_key.txt')
+
+##### GANACHE
+# HTTP_PROVIDER_WEB3 = 'http://127.0.0.1:8545'
+# SERVER_NODE_ADDRESS = w3.eth.accounts[2]
 
 CONTRACTS_DIR = os.path.abspath(os.getcwd() + '/helios/ethereum/contracts/')
 HELIOS_ADMINISTRATOR_CONTRACT_INTERFACE = ContractInterface(WEB3, 'HeliosManager', CONTRACTS_DIR)
@@ -442,6 +447,3 @@ HELIOS_ELECTION_CONTRACT_INTERFACE = ContractInterface(WEB3, 'HeliosElection', C
 
 HELIOS_ELECTION_CONTRACT_INTERFACE.compile_source_files()
 HELIOS_ELECTION_COMPILED_CONTRACT = HELIOS_ELECTION_CONTRACT_INTERFACE.all_compiled_contracts
-
-### ?? not sure if it's needed
-HELIOS_ELECTION_CONTRACT_INSTANCES = []

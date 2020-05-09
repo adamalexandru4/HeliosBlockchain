@@ -75,7 +75,7 @@
 <!-- voter worker - bulk voters -->
   {% if admin_p %}
   <!-- Add a Voter: WORK HERE-->
-  {% if upload_p and not election.openreg %}
+  {% if upload_p and not election.openreg and not election.frozen_at %}
   <hr>
   <div class="card">
     <div class="card-body">

@@ -259,7 +259,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
               currentAccount = accounts[0];
               $("#owner-address").val(currentAccount);
            } catch(error) {
-              console.log(error);
+              alert(error);
            }
         }
 
@@ -431,6 +431,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
                       dataType: 'json',
                       success: function (data) {
                         if (data.message) {
+                          electionVotersAdded = true;
                           $("#after-register-voters-tx").val(transactionHash);
                           $("#before-register-voters").attr('style','display:none !important');
                           $("#after-register-voters").show();
