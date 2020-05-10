@@ -297,7 +297,13 @@ def one_election_schedule(request, election):
 def one_election(request, election):
   if not election:
     raise Http404
-  return election.toJSONDict(complete=True)
+  electionJSON = election.toJSONDict(complete=True)
+
+  election_contract_compiled = settings.HELIOS_ELECTION_COMPILED_CONTRACT.get(
+    settings.CONTRACTS_DIR + '/HeliosElection.sol:HeliosElection')
+  election_contract_abi = election_contract_compiled.get('abi')
+  electionJSON['election_contract_abi'] = election_contract_abi
+  return electionJSON
 
 @election_view()
 @return_json
@@ -1696,7 +1702,8 @@ def voter_last_vote(request, election, voter_uuid):
   all cast votes by a voter
   """
   voter = Voter.get_by_election_and_uuid(election, voter_uuid)
-  return voter.last_cast_vote().toJSONDict()
+  voterJSON = voter.last_cast_vote().toJSONDict()
+  return voterJSON
 
 ##
 ## cast ballots

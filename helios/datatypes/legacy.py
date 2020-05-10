@@ -17,7 +17,7 @@ class LegacyObject(LDObject):
 class Election(LegacyObject):
     WRAPPED_OBJ_CLASS = models.Election
     FIELDS = ['uuid', 'questions', 'name', 'short_name', 'description', 'voters_hash', 'openreg',
-              'frozen_at', 'public_key', 'cast_url', 'use_voter_aliases', 'voting_starts_at', 'voting_ends_at']
+              'frozen_at', 'public_key', 'cast_url', 'use_voter_aliases', 'voting_starts_at', 'voting_ends_at', 'contract_address']
 
     STRUCTURED_FIELDS = {
         'public_key' : 'legacy/EGPublicKey',
@@ -69,9 +69,9 @@ class EncryptedVoteWithRandomness(LegacyObject):
     
 
 class Voter(LegacyObject):
-    FIELDS = ['election_uuid', 'uuid', 'voter_type', 'voter_id_hash', 'name']
+    FIELDS = ['election_uuid', 'uuid', 'voter_type', 'voter_id_hash', 'name', 'user_id_hash']
 
-    ALIASED_VOTER_FIELDS = ['election_uuid', 'uuid', 'alias']
+    ALIASED_VOTER_FIELDS = ['election_uuid', 'uuid', 'alias', 'user_id_hash']
 
     def toDict(self, complete=False):
         """
@@ -88,7 +88,7 @@ class ShortCastVote(LegacyObject):
     STRUCTURED_FIELDS = {'cast_at' : 'core/Timestamp'}
 
 class CastVote(LegacyObject):
-    FIELDS = ['vote', 'cast_at', 'voter_uuid', 'voter_hash', 'vote_hash']
+    FIELDS = ['vote', 'cast_at', 'voter_uuid', 'voter_hash', 'vote_hash', 'voter_id_hash']
     STRUCTURED_FIELDS = {
         'cast_at' : 'core/Timestamp',
         'vote' : 'legacy/EncryptedVote'}

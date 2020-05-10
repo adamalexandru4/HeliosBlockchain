@@ -929,6 +929,7 @@ class Voter(HeliosModel):
   #voter_id = models.CharField(max_length = 100)
 
   uuid = models.CharField(max_length = 50)
+  # ID Hash for blockchain
   user_id_hash = models.CharField(max_length = 100)
 
   # for users of type password, no user object is created
@@ -1160,6 +1161,10 @@ class CastVote(HeliosModel):
   @property
   def voter_hash(self):
     return self.voter.hash
+
+  @property
+  def voter_id_hash(self):
+    return self.voter.user_id_hash
 
   @property
   def is_quarantined(self):
