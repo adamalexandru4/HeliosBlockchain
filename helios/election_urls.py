@@ -11,6 +11,7 @@ from helios.views import *
 urlpatterns = [
     # election data that is cryptographically verified
     re_path(r'^$', one_election, name='one-election'),
+    re_path(r'^election-abi$', one_election_abi, name='one-election-abi'),
 
     # metadata that need not be verified
     re_path(r'^meta$', one_election_meta, name='one-election-meta'),

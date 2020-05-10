@@ -297,13 +297,19 @@ def one_election_schedule(request, election):
 def one_election(request, election):
   if not election:
     raise Http404
-  electionJSON = election.toJSONDict(complete=True)
+  return election.toJSONDict(complete=True)
 
+@election_view()
+@return_json
+def one_election_abi(request, election):
+  if not election:
+    raise Http404
   election_contract_compiled = settings.HELIOS_ELECTION_COMPILED_CONTRACT.get(
     settings.CONTRACTS_DIR + '/HeliosElection.sol:HeliosElection')
   election_contract_abi = election_contract_compiled.get('abi')
-  electionJSON['election_contract_abi'] = election_contract_abi
-  return electionJSON
+
+  return election_contract_abi
+
 
 @election_view()
 @return_json

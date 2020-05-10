@@ -1210,6 +1210,7 @@ class CastVote(HeliosModel):
 
     if result:
       self.verified_at = datetime.datetime.utcnow()
+    else:
       self.invalidated_at = datetime.datetime.utcnow()
 
     try:
@@ -1217,17 +1218,16 @@ class CastVote(HeliosModel):
       vote_hash_hex = heliosutils.get_vote_hash_hex(self.vote_hash)
       election_contract = w3.eth.contract(address=election_contract_address, abi=election_contract_abi)
 
-      #TODO: Bug with verification time
-      verified_at_now = self.verified_at + datetime.timedelta(hours=3)
-
       cast_at_int = int(self.cast_at.timestamp())
       if result:
+        # TODO: Bug with verification time
+        verified_at_now = self.verified_at + datetime.timedelta(hours=3)
         verified_at_int = int(verified_at_now.timestamp())
+
+        if cast_at_int == verified_at_int:
+          verified_at_int += 1
       else:
         verified_at_int = 0
-
-      if cast_at_int == verified_at_int:
-        verified_at_int += 1
 
       gas_estimate = election_contract.functions.vote(self.voter.user_id_hash,
                                                       vote_hash_hex,
