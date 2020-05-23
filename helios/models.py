@@ -471,16 +471,20 @@ class Election(HeliosModel):
     voters_who_voted_hex = self.download_voters_from_blockchain(election_contract_abi)
     voters_dict = dict.fromkeys(voters_who_voted_hex)
 
+    blockchain_verified = True
+
     for voter_blockchain in voters_who_voted_hex:
 
       try:
         voter = self.voter_set.get(user_id_hash = voter_blockchain)
       except Voter.MultipleObjectsReturned:
-        print('More voters with the same UUID exists in the DB')
-        return
+        self.append_log('More voters with the same UUID %s exists in the DB' % voter_blockchain)
+        blockchain_verified = False
+        break
       except Voter.ObjectDoesNotExist:
-        print('There is no voter with the voter in the DB')
-        return
+        self.append_log('There is no voter with the %s in the DB' % voter_blockchain)
+        blockchain_verified = False
+        break
 
       if voter:
         # Get the hash from blockchain and check with the one from DB
@@ -502,17 +506,25 @@ class Election(HeliosModel):
             vote_from_blockchain[0], vote_from_blockchain[1], vote_from_blockchain[2]))
 
           else:
-            print("Vote not matching for user %s" % voter_blockchain)
+            self.append_log("Vote not matching for user %s" % voter_blockchain)
+            blockchain_verified = False
+            break
         else:
-          print('Vote unavailable for voter %s' % voter_blockchain)
+          self.append_log('Vote unavailable in blockchain for voter %s' % voter_blockchain)
+          blockchain_verified = False
+          break
       else:
         # Log this error or stop the tallying with error
-        print('ERROR with DB')
+        print('Error with voter entry in database. Election stopped')
+        blockchain_verified = False
+        break
 
     self.voters_who_voted_json = json.dumps(voters_dict, cls=DjangoJSONEncoder)
 
-    self.encrypted_tally = tally
-    self.save()    
+    if blockchain_verified:
+      self.encrypted_tally = tally
+
+    self.save()
   
   def ready_for_decryption(self):
     return self.encrypted_tally != None
@@ -1209,9 +1221,9 @@ class CastVote(HeliosModel):
     result = self.vote.verify(self.voter.election)
 
     if result:
-      self.verified_at = datetime.datetime.utcnow()
+      self.verified_at = datetime.datetime.utcnow() + datetime.timedelta(hours=3)
     else:
-      self.invalidated_at = datetime.datetime.utcnow()
+      self.invalidated_at = datetime.datetime.utcnow() + datetime.timedelta(hours=3)
 
     try:
       # send transaction with the vote valided
@@ -1221,7 +1233,7 @@ class CastVote(HeliosModel):
       cast_at_int = int(self.cast_at.timestamp())
       if result:
         # TODO: Bug with verification time
-        verified_at_now = self.verified_at + datetime.timedelta(hours=3)
+        verified_at_now = self.verified_at
         verified_at_int = int(verified_at_now.timestamp())
 
         if cast_at_int == verified_at_int:

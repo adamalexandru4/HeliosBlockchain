@@ -31,8 +31,8 @@ ADMINS = (
     ('Adam Alexandru', 'domnuljohnny@gmail.com'),
 )
 
-# Django docs: A list in the same format as ADMINS that specifies 
-# who should get broken link notifications when 
+# Django docs: A list in the same format as ADMINS that specifies
+# who should get broken link notifications when
 # BrokenLinkEmailsMiddleware is enabled.
 MANAGERS = ADMINS
 
@@ -50,7 +50,7 @@ logging.basicConfig(
 # The two hosts are here so the main site can be over plain HTTP
 # while the voting URLs are served over SSL.
 # IMPORTANT: you should not change the SECURE_URL_HOST setting once you've created
-# elections, as your elections' cast_url will then be incorrect 
+# elections, as your elections' cast_url will then be incorrect
 # (it is stored in database and does not change).
 # Don't use:  SECURE_URL_HOST = "https://localhost:8443"
 
@@ -62,10 +62,10 @@ if PRODUCTION:
 
 else:
     URL_HOST = get_from_env("URL_HOST", "http://localhost:8000").rstrip("/")
-    SECURE_URL_HOST = get_from_env("SECURE_URL_HOST", URL_HOST).rstrip("/")    
+    SECURE_URL_HOST = get_from_env("SECURE_URL_HOST", URL_HOST).rstrip("/")
 
 
-# If debug is set to false and ALLOWED_HOSTS is not declared, django raises  
+# If debug is set to false and ALLOWED_HOSTS is not declared, django raises
 # "CommandError: You must set settings.ALLOWED_HOSTS if DEBUG is False."
 # If in production, you got a bad request (400) error
 # More info: https://docs.djangoproject.com/en/1.7/ref/settings/#allowed-hosts (same for 1.6)
@@ -100,20 +100,20 @@ DATABASES = {
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # https://docs.djangoproject.com/en/2.1/ref/settings/#media-root
-# MEDIA_ROOT and STATIC_ROOT must have different values. Before STATIC_ROOT was introduced, 
-# it was common to rely or fallback on MEDIA_ROOT to also serve static files; 
+# MEDIA_ROOT and STATIC_ROOT must have different values. Before STATIC_ROOT was introduced,
+# it was common to rely or fallback on MEDIA_ROOT to also serve static files;
 # however, since this can have serious security implications, there is a validation check to prevent it.
 MEDIA_ROOT = ''
 
-# URL that handles the media served from MEDIA_ROOT, used for managing stored files. 
-# It must end in a slash if set to a non-empty value. You will need to configure these files to be 
+# URL that handles the media served from MEDIA_ROOT, used for managing stored files.
+# It must end in a slash if set to a non-empty value. You will need to configure these files to be
 # served in both development and production environments.
 MEDIA_URL = ''
 
 
-# This should be an initially empty destination directory for collecting your static files from their permanent 
-# locations into one directory for ease of deployment; it is not a place to store your static files permanently. 
-# You should do that in directories that will be found by staticfiles’s finders, which by default, 
+# This should be an initially empty destination directory for collecting your static files from their permanent
+# locations into one directory for ease of deployment; it is not a place to store your static files permanently.
+# You should do that in directories that will be found by staticfiles’s finders, which by default,
 # are 'static/' app sub-directories and any directories you include in STATICFILES_DIRS).
 # https://docs.djangoproject.com/en/2.1/ref/settings/#std:setting-STATIC_ROOT
 STATIC_ROOT = 'static/'
@@ -121,8 +121,8 @@ STATIC_ROOT = 'static/'
 # URL to use when referring to static files located in STATIC_ROOT.
 STATIC_URL = '/static/'
 
-# This setting defines the additional locations the staticfiles app will traverse 
-# if the FileSystemFinder finder is enabled, e.g. if you use the collectstatic or findstatic management command 
+# This setting defines the additional locations the staticfiles app will traverse
+# if the FileSystemFinder finder is enabled, e.g. if you use the collectstatic or findstatic management command
 # or use the static file serving view.
 STATICFILES_DIRS = [
     "server_ui/static/",
@@ -354,7 +354,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 # EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
-# EMAIL_FILE_PATH = '/Users/warwickmcnaughton/Projects/Helios/Voter_list' 
+# EMAIL_FILE_PATH = '/Users/warwickmcnaughton/Projects/Helios/Voter_list'
 
 # to use AWS Simple Email Service
 # in which case environment should contain
@@ -381,13 +381,13 @@ CELERY_TIMEZONE = 'Europe/Bucharest'
 # CELERY_BIN="venv/bin/celery"
 # # List of node names to start (separated by space).
 # CELERYD_NODES="worker1"
-# Additional command-line arguments for the worker, see celery worker –help for a list. 
+# Additional command-line arguments for the worker, see celery worker –help for a list.
 # CELERYD_OPTS=""
 # Path to change directory to at start. Default is to stay in the current directory.
 # CELERYD_CHDIR
 # Full path to the PID file. Default is /var/run/celery/%n.pid
 # CELERYD_PID_FILE
-# Full path to the worker log file. Default is /var/log/celery/%n%I.log 
+# Full path to the worker log file. Default is /var/log/celery/%n%I.log
 # Note: Using %I is important when using the prefork pool as having multiple processes share the same log file will lead to race conditions.
 # CELERYD_LOG_FILE
 # Worker log level. Default is INFO.
@@ -396,7 +396,7 @@ CELERY_TIMEZONE = 'Europe/Bucharest'
 # CELERYD_USER
 # Group to run worker as. Default is current user.
 # CELERYD_GROUP
-# Always create directories (log directory and pid file directory). 
+# Always create directories (log directory and pid file directory).
 # Default is to only create directories when no custom logfile/pidfile set.
 # CELERY_CREATE_DIRS
 # Always create pidfile directory. By default only enabled when no custom pidfile location set.
@@ -417,7 +417,7 @@ if ROLLBAR_ACCESS_TOKEN:
   MIDDLEWARE_CLASSES += ('rollbar.contrib.django.middleware.RollbarNotifierMiddleware',)
   ROLLBAR = {
     'access_token': ROLLBAR_ACCESS_TOKEN,
-    'environment': 'development' if DEBUG else 'production',  
+    'environment': 'development' if DEBUG else 'production',
   }
 
 ##############################
@@ -440,10 +440,8 @@ PRIVATE_KEY_FILE = os.path.abspath(os.getcwd() + '/private_key.txt')
 # SERVER_NODE_ADDRESS = w3.eth.accounts[2]
 
 CONTRACTS_DIR = os.path.abspath(os.getcwd() + '/helios/ethereum/contracts/')
-HELIOS_ADMINISTRATOR_CONTRACT_INTERFACE = ContractInterface(WEB3, 'HeliosManager', CONTRACTS_DIR)
-HELIOS_ADMINISTRATOR_CONTRACT_ADDRESS = "0x8BBc43225D1E4e2b1dB0ee89aACe9281da9b0539"
 
 HELIOS_ELECTION_CONTRACT_INTERFACE = ContractInterface(WEB3, 'HeliosElection', CONTRACTS_DIR)
-
 HELIOS_ELECTION_CONTRACT_INTERFACE.compile_source_files()
+
 HELIOS_ELECTION_COMPILED_CONTRACT = HELIOS_ELECTION_CONTRACT_INTERFACE.all_compiled_contracts

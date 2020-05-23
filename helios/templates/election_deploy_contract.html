@@ -220,10 +220,6 @@ Registration for your election is currently <b>closed</b>, which means only the 
     var questions = {{ questions | safe }};
     var questions_blockchain = {{ questions_blockchain | safe }};
 
-    var created_date_uint = new Date('{{election.created_at|date:"D, d M Y H:i:s"}}').getTime();
-    var start_date_uint = new Date('{{election.voting_starts_at|date:"D, d M Y H:i:s"}}').getTime();
-    var end_date_uint = new Date('{{election.voting_ends_at|date:"D, d M Y H:i:s"}}').getTime();
-
     function getCookie(name) {
       var cookieValue = null;
       if (document.cookie && document.cookie !== '') {
@@ -335,7 +331,7 @@ Registration for your election is currently <b>closed</b>, which means only the 
               let payload = {
                   data: "0x" + election_bytecode,
                   arguments: ["{{election.name}}", web3.utils.asciiToHex("{{election.short_name}}"),
-                                created_date_uint, start_date_uint, end_date_uint, "{{server_node_address}}"]
+                                {{created_at}}, {{starts_at}}, {{ends_at}}, "{{server_node_address}}"]
               }
               electionContract = new web3.eth.Contract(election_abi);
               const estimatedGas = await electionContract.deploy(payload).estimateGas();

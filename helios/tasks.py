@@ -65,30 +65,6 @@ def voters_notify(election_id, notification_template, extra_vars={}):
         single_voter_notify.delay(voter.uuid, notification_template, extra_vars)
 
 @shared_task()
-def register_new_election_contract_blockchain(register_election_txn, private_key_bytes):
-
-    private_key_bytes = bytes.fromhex(private_key_bytes)
-    w3 = settings.WEB3
-
-    try:
-        signed_txn = w3.eth.account.sign_transaction(register_election_txn, private_key=private_key_bytes)
-        w3.eth.sendRawTransaction(signed_txn.rawTransaction)
-    except Exception as ex:
-        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-        message = template.format(type(ex).__name__, ex.args)
-        print(message)
-
-    # let another thread to handle the receipt
-    receipt_tx_register_election.delay(signed_txn.hash.hex())
-
-@shared_task()
-def receipt_tx_register_election(tx_hash):
-    w3 = settings.WEB3
-    receipt = w3.eth.waitForTransactionReceipt(tx_hash)
-    print("Election with TX:" + tx_hash + " is registered after this transaction")
-    print(dict(receipt))
-
-@shared_task()
 def single_voter_email(voter_uuid, subject_template, body_template, extra_vars={}):
     voter = Voter.objects.get(uuid = voter_uuid)
 

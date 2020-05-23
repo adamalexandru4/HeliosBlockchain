@@ -57,13 +57,6 @@ from web3.exceptions import TransactionNotFound
 
 w3 = settings.WEB3
 
-from helios.ethereum.AdministratorContractDeployWrapper import AdministratorContractDeployWrapper
-administratorContractDeployWrapper = AdministratorContractDeployWrapper.getInstance()
-if (len(settings.HELIOS_ADMINISTRATOR_CONTRACT_ADDRESS) == 0):
-  raise Exception('You should deploy the manager smart contract and the address to the settings file')
-else:
-  administratorContractInstance = administratorContractDeployWrapper.set_deployed_contract_from_address(settings.HELIOS_ADMINISTRATOR_CONTRACT_ADDRESS)
-
 #########################################
 
 Election = apps.get_model('helios', 'Election')
@@ -697,7 +690,7 @@ def one_election_cast_confirm(request, election):
       'vote' : vote,
       'voter' : voter,
       'vote_hash': vote_fingerprint,
-      'cast_at': datetime.datetime.utcnow(),
+      'cast_at': datetime.datetime.utcnow() + datetime.timedelta(hours=3),
       'cast_ip': cast_ip
     }
 
@@ -1104,31 +1097,19 @@ def deployed_contract(request, election):
   if request.is_ajax and request.method == "POST":
     try:
       valid_address = w3.toChecksumAddress(request.POST['contractAddress'])
-      election_hex = Web3.keccak(text = election.uuid)
 
-      gas_estimate = administratorContractInstance.functions.createElection(valid_address, election_hex).estimateGas()
-      if gas_estimate < 500000:
+      election.contract_address = valid_address
+      election.deploy_transaction = request.POST['transactionHash']
+      election.owner_address = request.POST['ownerAddress']
+      election.save()
 
-        # can't move this logic in another task because it's not json serializable
-        register_election_txn = administratorContractInstance.functions.createElection(valid_address, election_hex).buildTransaction({
-          'nonce': w3.eth.getTransactionCount(settings.SERVER_NODE_ADDRESS),
-          'gasPrice': w3.eth.gasPrice,
-          'gas': gas_estimate
-        })
+      return JsonResponse({'message': "Your election's contract is registered"}, status=200)
 
-        tasks.register_new_election_contract_blockchain.delay(register_election_txn, privateKey)
-
-        election.deploy_transaction = request.POST['transactionHash']
-        election.contract_address = request.POST['contractAddress']
-        election.owner_address = request.POST['ownerAddress']
-        election.save()
-        return JsonResponse({'message': "Your election's contract is registered"}, status=200)
-      else:
-        raise Exception('Gas estimated for registration of your election contract is too much')
     except Exception as ex:
       template = "An exception of type {0} occurred. Arguments:\n{1!r}"
       message = template.format(type(ex).__name__, ex.args)
       return JsonResponse({'error': message}, status=500)
+
   else:
     return JsonResponse({'error': "URL available only for POST request"}, status=404)
     
@@ -1210,6 +1191,12 @@ def one_election_deploy_contract(request, election):
       }).encode('utf8')).hexdigest()
       election.save()
 
+
+
+    created_at_int = int((election.created_at + datetime.timedelta(hours=3)).timestamp())
+    starts_at_int = int((election.voting_starts_at + datetime.timedelta(hours=3)).timestamp())
+    ends_at_int = int((election.voting_ends_at + datetime.timedelta(hours=3)).timestamp())
+
     if not election.openreg:
       # PAGINATION FOR VOTERS
       order_by = 'user__user_id'
@@ -1234,7 +1221,10 @@ def one_election_deploy_contract(request, election):
                         'questions_blockchain': json.dumps(questions_blockchain),
                         'issues_p' : len(issues) > 0,
                         'server_node_address': settings.SERVER_NODE_ADDRESS,
-                        'voters': voters_json})
+                        'voters': voters_json,
+                        'created_at': created_at_int,
+                        'starts_at': starts_at_int,
+                        'ends_at': ends_at_int})
 
 
     return render_template(request, 'election_deploy_contract', {'election': election,
@@ -1245,7 +1235,10 @@ def one_election_deploy_contract(request, election):
                                                                  'server_node_address': settings.SERVER_NODE_ADDRESS,
                                                                  'questions': json.dumps(election.questions),
                                                                  'questions_blockchain': json.dumps(questions_blockchain),
-                                                                 'issues_p' : len(issues) > 0})
+                                                                 'issues_p': len(issues) > 0,
+                                                                 'created_at': created_at_int,
+                                                                 'starts_at': starts_at_int,
+                                                                 'ends_at': ends_at_int})
   else:
 
     if get_user(request):
@@ -1305,7 +1298,15 @@ def one_election_compute_tally(request, election):
       print('Not all transactions are mined yet.. try again later')
       return HttpResponseRedirect(settings.SECURE_URL_HOST + reverse(one_election_view, args=[election.election_id]))
 
-    return render_template(request, 'election_compute_tally', {'election': election})
+    try:
+      election_contract = settings.HELIOS_ELECTION_COMPILED_CONTRACT.get(
+        settings.CONTRACTS_DIR + '/HeliosElection.sol:HeliosElection')
+      election_contract_abi_json = json.dumps(election_contract.get('abi'))
+    except:
+      return HttpResponseForbidden('Election contract not compiled')
+
+    return render_template(request, 'election_compute_tally', {'election': election,
+                                                               'election_contract_abi': election_contract_abi_json})
   
   check_csrf(request)
 

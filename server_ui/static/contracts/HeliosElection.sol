@@ -32,7 +32,6 @@ contract HeliosElection {
     mapping(bytes32 => Vote) public votes;
     bytes32[] public votersWhoVoted;
 
-    bool public electionIsFinished;
     bool public isElectionPublic;
     uint public createdAt;
     uint public startAt;
@@ -49,7 +48,6 @@ contract HeliosElection {
         name = _name;
         short_name = _short_name;
 
-        electionIsFinished = false;
         isElectionPublic = true;
         serverNodeAddr = _serverNodeAddr;
         noQuestions = 0;
@@ -137,8 +135,6 @@ contract HeliosElection {
     function vote(bytes32 _uuid, bytes32 _hash, uint _castAt, uint _verifiedAt) public {
         require(msg.sender == owner || msg.sender == serverNodeAddr, "You are not eligible to register a vote");
 
-        require(!electionIsFinished, "Election is finished!");
-
         require(_castAt < _verifiedAt, "Verification time is not after casting time. You cannot hack it");
         require(_castAt > startAt, "Vote is not available before starting time");
         require(_castAt < endAt, "Vote is not available after ending time");
@@ -160,9 +156,7 @@ contract HeliosElection {
 
     function stopElection(uint _endAt) public {
         require(msg.sender == owner || msg.sender == serverNodeAddr, "You are not eligible to stop the election");
-        require(!electionIsFinished, "Election is already stopped!");
 
-        electionIsFinished = true;
         endAt = _endAt;
     }
 

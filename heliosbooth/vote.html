@@ -227,7 +227,7 @@
         
       <p>Once you click "Submit", the unencrypted version of your ballot will be destroyed, and only the encrypted version will remain.  The encrypted version will be submitted to the Helios server.</p>
 
-      <div class="row justify-content-end" style="margin-right: 0px; margin-top: 9rem;">
+      <div class="row justify-content-end" style="margin-right: 0px; margin-top: 7rem;">
         <div class="col-1">
           <div id="loading_div" style="display: none;"><img  style="width: 25px;margin: 0.5rem 0.5rem 0rem 2.5rem;height: 25px;" src="loading.gif" id="proceed_loading_img" /></div>
         </div>
@@ -586,6 +586,7 @@ Before going back to voting, you can post this audited ballot to the Helios trac
     } else {
       BOOTH.ballot.answers[question_num] = UTILS.array_remove_value(BOOTH.ballot.answers[question_num], answer_num);
       $('#card_' + question_num + "_" + answer_num).toggleClass('card_selected');
+      $('#answer_card_icon_' + question_num + "_" + answer_num).hide();
     }
 
     if (BOOTH.election.questions[question_num].max != null && BOOTH.ballot.answers[question_num].length >= BOOTH.election.questions[question_num].max) {
@@ -604,6 +605,8 @@ Before going back to voting, you can post this audited ballot to the Helios trac
       if (BOOTH.election.questions[question_num].max > 1) {
         $('#warning_box').html("Maximum number of options selected.<br />To change your selection, please de-select a current selection first.");
       }
+
+      $('#card-state-icon').hide();
     } else {
       // enable the other checkboxes
       $('.ballot_answer').each(function (i, checkbox) {
@@ -613,8 +616,6 @@ Before going back to voting, you can post this audited ballot to the Helios trac
         if($(card).hasClass('card_inactive'))
           $(card).toggleClass('card_inactive');
       });
-
-      $(".card-state-icon").hide();
 
       $('#warning_box').html("");
     }
