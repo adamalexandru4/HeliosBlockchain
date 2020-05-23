@@ -21,6 +21,8 @@ from helios import utils as heliosutils
 
 from helios import datatypes
 
+from .crypto import utils as cryptoutils
+
 # useful stuff in helios_auth
 from helios_auth.models import User, AUTH_SYSTEMS
 from helios_auth.jsonfield import JSONField
@@ -45,7 +47,7 @@ class HeliosModel(models.Model, datatypes.LDObjectContainer):
 
 class Election(HeliosModel):
   admin = models.ForeignKey(User, models.CASCADE)
-  
+
   uuid = models.CharField(max_length=50, null=False)
 
   # Ethereum smart contract address deployed
@@ -66,10 +68,10 @@ class Election(HeliosModel):
   # v3.1 will still use legacy/Election
   # later versions, at some point will upgrade to "2011/01/Election"
   datatype = models.CharField(max_length=250, null=False, default="legacy/Election")
-  
+
   short_name = models.CharField(max_length=100, unique=True)
   name = models.CharField(max_length=250)
-  
+
   ELECTION_TYPES = (
     ('election', 'Election'),
     ('referendum', 'Referendum')
@@ -83,10 +85,10 @@ class Election(HeliosModel):
                              null=True)
   private_key = LDObjectField(type_hint = 'legacy/EGSecretKey',
                               null=True)
-  
+
   questions = LDObjectField(type_hint = 'legacy/Questions',
                             null=True)
-  
+
   # eligibility is a JSON field, which lists auth_systems and eligibility details for that auth_system, e.g.
   # [{'auth_system': 'cas', 'constraint': [{'year': 'u12'}, {'year':'u13'}]}, {'auth_system' : 'password'}, {'auth_system' : 'openid', 'constraint': [{'host':'http://myopenid.com'}]}]
   eligibility = LDObjectField(type_hint = 'legacy/Eligibility',
@@ -96,10 +98,10 @@ class Election(HeliosModel):
   # this is now used to indicate the state of registration,
   # whether or not the election is frozen
   openreg = models.BooleanField(default=False)
-  
+
   # featured election?
   featured_p = models.BooleanField(default=False)
-    
+
   # voter aliases?
   use_voter_aliases = models.BooleanField(default=False)
 
@@ -108,18 +110,18 @@ class Election(HeliosModel):
 
   # randomize candidate order?
   randomize_answer_order = models.BooleanField(default=False, null=False)
-  
+
   # where votes should be cast
   cast_url = models.CharField(max_length = 500)
 
   # dates at which this was touched
   created_at = models.DateTimeField(auto_now_add=True)
   modified_at = models.DateTimeField(auto_now_add=True)
-  
+
   # dates at which things happen for the election
   frozen_at = models.DateTimeField(auto_now_add=False, default=None, null=True)
   archived_at = models.DateTimeField(auto_now_add=False, default=None, null=True)
-  
+
   # dates for the election steps, as scheduled
   # these are always UTC
   registration_starts_at = models.DateTimeField(auto_now_add=False, default=None, null=True)
@@ -133,7 +135,7 @@ class Election(HeliosModel):
   complaint_period_ends_at = models.DateTimeField(auto_now_add=False, default=None, null=True)
 
   tallying_starts_at = models.DateTimeField(auto_now_add=False, default=None, null=True)
-  
+
   # dates when things were forced to be performed
   voting_started_at = models.DateTimeField(auto_now_add=False, default=None, null=True)
   voting_extended_until = models.DateTimeField(auto_now_add=False, default=None, null=True)
@@ -147,7 +149,7 @@ class Election(HeliosModel):
 
   # the hash of all voters (stored for large numbers)
   voters_hash = models.CharField(max_length=100, null=True)
-  
+
   # encrypted tally, each a JSON string
   # used only for homomorphic tallies
   encrypted_tally = LDObjectField(type_hint = 'legacy/Tally',
@@ -201,7 +203,7 @@ class Election(HeliosModel):
     """
     if not self.use_voter_aliases:
       return None
-    
+
     return heliosutils.one_val_raw_sql("select max(cast(substring(alias, 2) as integer)) from " + Voter._meta.db_table + " where election_id = %s", [self.id]) or 0
 
   @property
@@ -222,7 +224,7 @@ class Election(HeliosModel):
   @classmethod
   def get_featured(cls):
     return cls.objects.filter(featured_p = True).order_by('short_name')
-    
+
   @classmethod
   def get_or_create(cls, **kwargs):
     return cls.objects.get_or_create(short_name = kwargs['short_name'], defaults=kwargs)
@@ -239,7 +241,7 @@ class Election(HeliosModel):
       return query[:limit]
     else:
       return query
-    
+
   @classmethod
   def get_by_user_as_voter(cls, user, archived_p=None, limit=None):
     query = cls.objects.filter(voter__user = user)
@@ -252,21 +254,21 @@ class Election(HeliosModel):
       return query[:limit]
     else:
       return query
-    
+
   @classmethod
   def get_by_uuid(cls, uuid):
     try:
       return cls.objects.select_related().get(uuid=uuid)
     except cls.DoesNotExist:
       return None
-  
+
   @classmethod
   def get_by_short_name(cls, short_name):
     try:
       return cls.objects.get(short_name=short_name)
     except cls.DoesNotExist:
       return None
-    
+
   def save_questions_safely(self, questions):
     """
     Because Django doesn't let us override properties in a Pythonic way... doing the brute-force thing.
@@ -276,11 +278,11 @@ class Election(HeliosModel):
       for answer_url in q['answer_urls']:
         if not answer_url or answer_url == "":
           continue
-          
+
         # abort saving if bad URL
         if not (answer_url[:7] == "http://" or answer_url[:8]== "https://"):
           return False
-    
+
     self.questions = questions
     return True
 
@@ -294,10 +296,10 @@ class Election(HeliosModel):
 
     new_voter_file = VoterFile(election = self, voter_file_content = uploaded_file.read().decode())
     new_voter_file.save()
-    
+
     self.append_log(ElectionLog.VOTER_FILE_ADDED)
     return new_voter_file
-  
+
   def user_eligible_p(self, user):
     """
     Checks if a user is eligible for this election.
@@ -305,15 +307,15 @@ class Election(HeliosModel):
     # registration closed, then eligibility doesn't come into play
     if not self.openreg:
       return False
-    
+
     if self.eligibility == None:
       return True
-      
+
     # is the user eligible for one of these cases?
     for eligibility_case in self.eligibility:
       if user.is_eligible_for(eligibility_case):
         return True
-        
+
     return False
 
   def eligibility_constraint_for(self, user_type):
@@ -331,21 +333,21 @@ class Election(HeliosModel):
     "when eligibility is by category, this returns the category_id"
     if not self.eligibility:
       return None
-    
+
     constraint_for = self.eligibility_constraint_for(user_type)
     if len(constraint_for) > 0:
       constraint = constraint_for[0]
       return AUTH_SYSTEMS[user_type].eligibility_category_id(constraint)
     else:
       return None
-    
+
   @property
   def pretty_eligibility(self):
     if not self.eligibility:
       return "Anyone can vote."
     else:
       return_val = "<ul style='margin-bottom: 0rem;'>"
-      
+
       for constraint in self.eligibility:
         if 'constraint' in constraint:
           for one_constraint in constraint['constraint']:
@@ -356,13 +358,13 @@ class Election(HeliosModel):
       return_val += "</ul>"
 
       return return_val
-  
+
   def voting_has_started(self):
     """
     has voting begun? voting begins if the election is frozen, at the prescribed date or at the date that voting was forced to start
     """
     return self.frozen_at != None and (self.voting_starts_at == None or (datetime.datetime.utcnow() >= (self.voting_started_at or self.voting_starts_at)))
-    
+
   def voting_has_stopped(self):
     """
     has voting stopped? if tally computed, yes, otherwise if we have passed the date voting was manually stopped at,
@@ -407,7 +409,7 @@ class Election(HeliosModel):
         {'type': 'questions',
          'action': "add questions to the ballot"}
         )
-  
+
     trustees = Trustee.get_by_election(self)
     if len(trustees) == 0:
       issues.append({
@@ -428,7 +430,7 @@ class Election(HeliosModel):
           "action" : 'enter your voter list (or open registration to the public)'
           })
 
-    return issues    
+    return issues
 
   def ready_for_tallying(self):
     return datetime.datetime.utcnow() >= self.tallying_starts_at
@@ -494,7 +496,10 @@ class Election(HeliosModel):
 
           vote_from_blockchain_hash_with_padding = base64.b64encode(bytes.fromhex(vote_from_blockchain[0][2:])).decode('utf-8')
 
-          vote_hash_with_padding = voter.vote_hash
+          vote_data = datatypes.LDObject.instantiate(voter.vote, 'legacy/EncryptedVote')
+          vote_json = vote_data.serialize()
+
+          vote_hash_with_padding = cryptoutils.hash_b64(vote_json.strip())
           vote_hash_with_padding += "=" * ((4 - len(voter.vote_hash) % 4) % 4)
 
           if (vote_from_blockchain_hash_with_padding == vote_hash_with_padding and
@@ -525,10 +530,10 @@ class Election(HeliosModel):
       self.encrypted_tally = tally
 
     self.save()
-  
+
   def ready_for_decryption(self):
     return self.encrypted_tally != None
-    
+
   def ready_for_decryption_combination(self):
     """
     do we have a tally from all trustees?
@@ -536,9 +541,9 @@ class Election(HeliosModel):
     for t in Trustee.get_by_election(self):
       if not t.decryption_factors:
         return False
-    
+
     return True
-    
+
   def release_result(self):
     """
     release the result that should already be computed
@@ -547,22 +552,22 @@ class Election(HeliosModel):
       return
 
     self.result_released_at = datetime.datetime.utcnow()
-  
+
   def combine_decryptions(self):
     """
     combine all of the decryption results
     """
-    
+
     # gather the decryption factors
     trustees = Trustee.get_by_election(self)
     decryption_factors = [t.decryption_factors for t in trustees]
-    
+
     self.result = self.encrypted_tally.decrypt_from_factors(decryption_factors, self.public_key)
 
     self.append_log(ElectionLog.DECRYPTIONS_COMBINED)
 
     self.save()
-  
+
   def generate_voters_hash(self):
     """
     look up the list of voters, make a big file, and hash it
@@ -577,15 +582,15 @@ class Election(HeliosModel):
       voters = Voter.get_by_election(self)
       voters_json = utils.to_json([v.toJSONDict() for v in voters])
       self.voters_hash = utils.hash_b64(voters_json)
-    
+
   def increment_voters(self):
     ## FIXME
     return 0
-    
+
   def increment_cast_votes(self):
     ## FIXME
     return 0
-        
+
   def set_eligibility(self):
     """
     if registration is closed and eligibility has not been
@@ -616,7 +621,7 @@ class Election(HeliosModel):
     else:
       # no password users, remove password from the possible auth systems
       if 'password' in auth_systems:
-        auth_systems.remove('password')        
+        auth_systems.remove('password')
 
     # closed registration: limit the auth_systems to just the ones
     # that have registered voters
@@ -624,7 +629,7 @@ class Election(HeliosModel):
       auth_systems = [vt for vt in voter_types if vt in auth_systems]
 
     self.eligibility = [{'auth_system': auth_system} for auth_system in auth_systems]
-    self.save()    
+    self.save()
 
   def deploy_complete(self):
     """
@@ -640,20 +645,20 @@ class Election(HeliosModel):
     """
     if len(self.issues_before_freeze) > 0:
       raise Exception("cannot freeze an election that has issues")
-    
+
     # voters hash
     self.generate_voters_hash()
 
     self.set_eligibility()
-    
+
     # public key for trustees
     trustees = Trustee.get_by_election(self)
     combined_pk = trustees[0].public_key
     for t in trustees[1:]:
       combined_pk = combined_pk * t.public_key
-      
+
     self.public_key = combined_pk
-    
+
     # log it
     self.append_log(ElectionLog.FROZEN)
 
@@ -674,7 +679,7 @@ class Election(HeliosModel):
     trustee.email = settings.DEFAULT_FROM_EMAIL
     trustee.public_key = keypair.pk
     trustee.secret_key = keypair.sk
-    
+
     # FIXME: is this at the right level of abstraction?
     trustee.public_key_hash = datatypes.LDObject.instantiate(trustee.public_key, datatype='legacy/EGPublicKey').hash
 
@@ -688,21 +693,22 @@ class Election(HeliosModel):
       return trustees_with_sk[0]
     else:
       return None
-    
+
   def has_helios_trustee(self):
     return self.get_helios_trustee() != None
 
   def helios_trustee_decrypt(self):
-    print('\nhelios.models.Election.helios_trustee_decrypt started........\n')
-    tally = self.encrypted_tally
-    tally.init_election(self)
+    if self.encrypted_tally:
+      print('\nhelios.models.Election.helios_trustee_decrypt started........\n')
+      tally = self.encrypted_tally
+      tally.init_election(self)
 
-    trustee = self.get_helios_trustee()
-    factors, proof = tally.decryption_factors_and_proofs(trustee.secret_key)
+      trustee = self.get_helios_trustee()
+      factors, proof = tally.decryption_factors_and_proofs(trustee.secret_key)
 
-    trustee.decryption_factors = factors
-    trustee.decryption_proofs = proof
-    trustee.save()
+      trustee.decryption_factors = factors
+      trustee.decryption_proofs = proof
+      trustee.save()
 
   def append_log(self, text):
     item = ElectionLog(election = self, log=text, at=datetime.datetime.utcnow())
@@ -722,7 +728,7 @@ class Election(HeliosModel):
     # FIXME: create the right kind of tally
     from helios.workflows import homomorphic
     return homomorphic.Tally(election=self)
-        
+
   @property
   def registration_status_pretty(self):
     if self.openreg:
@@ -738,7 +744,7 @@ class Election(HeliosModel):
     # sort the answers , keep track of the index
     counts = sorted(enumerate(result), key=lambda x: x[1])
     counts.reverse()
-    
+
     the_max = question['max'] or 1
     the_min = question['min'] or 0
 
@@ -754,7 +760,7 @@ class Election(HeliosModel):
         return []
     else:
       # assumes that anything non-absolute is relative
-      return [counts[0][0]]    
+      return [counts[0][0]]
 
   @property
   def winners(self):
@@ -764,12 +770,12 @@ class Election(HeliosModel):
     assumes that if there is a max to the question, that's how many winners there are.
     """
     return [self.one_question_winner(self.questions[i], self.result[i], self.num_cast_votes) for i in range(len(self.questions))]
-    
+
   @property
   def pretty_result(self):
     if not self.result:
       return None
-    
+
     # get the winners
     winners = self.winners
 
@@ -780,13 +786,13 @@ class Election(HeliosModel):
     for i in range(len(self.questions)):
       q = self.questions[i]
       pretty_question = []
-      
+
       # go through answers
       for j in range(len(q['answers'])):
         a = q['answers'][j]
         count = raw_result[i][j]
         pretty_question.append({'answer': a, 'count': count, 'winner': (j in winners[i])})
-        
+
       prettified_result.append({'question': q['short_name'], 'answers': pretty_question})
 
     return prettified_result
@@ -823,19 +829,19 @@ def unicode_csv_reader(unicode_csv_data, dialect=csv.excel, **kwargs):
       try:
         yield [str(cell, 'utf-8') for cell in row]
       except:
-        yield [str(cell, 'latin-1') for cell in row]        
+        yield [str(cell, 'latin-1') for cell in row]
 
 def utf_8_encoder(unicode_csv_data):
     for line in unicode_csv_data:
       # FIXME: this used to be line.encode('utf-8'),
       # need to figure out why this isn't consistent
       yield line
-  
+
 class VoterFile(models.Model):
   """
   A model to store files that are lists of voters to be processed
   """
-  # path where we store voter upload 
+  # path where we store voter upload
   PATH = settings.VOTER_UPLOAD_REL_PATH
 
   election = models.ForeignKey(Election, models.CASCADE)
@@ -875,7 +881,7 @@ class VoterFile(models.Model):
       # bad line
       if len(voter_fields) < 1:
         continue
-    
+
       return_dict = {'voter_id': voter_fields[0].strip()}
 
       if len(voter_fields) > 1:
@@ -890,22 +896,22 @@ class VoterFile(models.Model):
         return_dict['name'] = return_dict['email']
 
       yield return_dict
-    
+
   def process(self):
     self.processing_started_at = datetime.datetime.utcnow()
     self.save()
 
-    election = self.election    
+    election = self.election
     last_alias_num = election.last_alias_num
 
     num_voters = 0
     new_voters = []
     for voter in self.itervoters():
       num_voters += 1
-    
+
       # does voter for this user already exist
       existing_voter = Voter.get_by_election_and_voter_id(election, voter['voter_id'])
-    
+
       # create the voter
       if not existing_voter:
 
@@ -933,7 +939,7 @@ class VoterFile(models.Model):
 
 class Voter(HeliosModel):
   election = models.ForeignKey(Election, models.CASCADE)
-  
+
   # let's link directly to the user now
   # FIXME: delete this as soon as migrations are set up
   #name = models.CharField(max_length = 200, null=True)
@@ -953,10 +959,10 @@ class Voter(HeliosModel):
   voter_password = models.CharField(max_length = 100, null=True)
   voter_name = models.CharField(max_length = 200, null=True)
   voter_email = models.CharField(max_length = 250, null=True)
-  
+
   # if election uses aliases
   alias = models.CharField(max_length = 100, null=True)
-  
+
   # we keep a copy here for easy tallying
   vote = LDObjectField(type_hint = 'legacy/EncryptedVote',
                        null=True)
@@ -998,7 +1004,7 @@ class Voter(HeliosModel):
     FIXME: review this for non-GAE?
     """
     query = cls.objects.filter(election = election)
-    
+
     # the boolean check is not stupid, this is ternary logic
     # none means don't care if it's cast or not
     if cast == True:
@@ -1010,7 +1016,7 @@ class Voter(HeliosModel):
     # order by uuid only when no inequality has been added
     if cast == None or order_by == 'cast_at' or order_by =='-cast_at':
       query = query.order_by(order_by)
-      
+
       # if we want the list after a certain UUID, add the inequality here
       if after:
         if order_by[0] == '-':
@@ -1019,12 +1025,12 @@ class Voter(HeliosModel):
           field_name = "%s__gt" % order_by
         conditions = {field_name : after}
         query = query.filter (**conditions)
-    
+
     if limit:
       query = query[:limit]
-      
+
     return query
-  
+
   @classmethod
   def get_all_by_election_in_chunks(cls, election, cast=None, chunk=100):
     return cls.get_by_election(election)
@@ -1035,14 +1041,14 @@ class Voter(HeliosModel):
       return cls.objects.get(election = election, voter_login_id = voter_id)
     except cls.DoesNotExist:
       return None
-    
+
   @classmethod
   def get_by_election_and_user(cls, election, user):
     try:
       return cls.objects.get(election = election, user = user)
     except cls.DoesNotExist:
       return None
-      
+
   @classmethod
   def get_by_election_and_uuid(cls, election, uuid):
     query = cls.objects.filter(election = election, uuid = uuid)
@@ -1067,7 +1073,7 @@ class Voter(HeliosModel):
     """
     if not self.vote_hash:
       return None
-    
+
     return CastVote.objects.get(vote_hash = self.vote_hash).vote_tinyhash
 
   @property
@@ -1097,7 +1103,7 @@ class Voter(HeliosModel):
       try:
         return utils.hash_b64(value_to_hash)
       except:
-        return utils.hash_b64(value_to_hash)        
+        return utils.hash_b64(value_to_hash)
 
   @property
   def voter_type(self):
@@ -1106,17 +1112,17 @@ class Voter(HeliosModel):
   @property
   def display_html_big(self):
     return self.get_user().display_html_big
-      
+
   def send_message(self, subject, body):
     self.get_user().send_message(subject, body)
-    
+
   def can_update_status(self):
     return self.get_user().can_update_status()
 
   def generate_password(self, length=10):
     if self.voter_password:
       raise Exception("password already exists")
-    
+
     self.voter_password = heliosutils.random_string(length, alphabet='abcdefghjkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789')
 
   def store_vote(self, cast_vote):
@@ -1129,7 +1135,7 @@ class Voter(HeliosModel):
     self.cast_at = cast_vote.cast_at
     self.tx_hash = cast_vote.tx_hash
     self.save()
-  
+
   def last_cast_vote(self):
     return CastVote(vote = self.vote, vote_hash = self.vote_hash, cast_at = self.cast_at, voter=self)
 
@@ -1155,7 +1161,7 @@ class CastVote(HeliosModel):
   # when is the vote verified?
   verified_at = models.DateTimeField(null=True)
   invalidated_at = models.DateTimeField(null=True)
-  
+
   # auditing purposes, like too many votes from the same IP, if it isn't expected
   cast_ip = models.GenericIPAddressField(null=True)
 
@@ -1168,8 +1174,8 @@ class CastVote(HeliosModel):
 
   @property
   def voter_uuid(self):
-    return self.voter.uuid  
-    
+    return self.voter.uuid
+
   @property
   def voter_hash(self):
     return self.voter.hash
@@ -1189,14 +1195,14 @@ class CastVote(HeliosModel):
     safe_hash = self.vote_hash
     for c in ['/', '+']:
       safe_hash = safe_hash.replace(c,'')
-    
+
     length = 8
     while True:
       vote_tinyhash = safe_hash[:length]
       if CastVote.objects.filter(vote_tinyhash = vote_tinyhash).count() == 0:
         break
       length += 1
-      
+
     self.vote_tinyhash = vote_tinyhash
 
   def save(self, *args, **kwargs):
@@ -1208,7 +1214,7 @@ class CastVote(HeliosModel):
       self.set_tinyhash()
 
     super(CastVote, self).save(*args, **kwargs)
-  
+
   @classmethod
   def get_by_voter(cls, voter):
     return cls.objects.filter(voter = voter).order_by('-cast_at')
@@ -1263,13 +1269,13 @@ class CastVote(HeliosModel):
     except Exception as e:
       print(e)
       raise Exception('Error during casting the vote on blockchain')
-      
+
     # save and store the vote as the voter's last cast vote
     self.save()
 
     if result:
       self.voter.store_vote(self)
-    
+
     return result
 
   def issues(self, election):
@@ -1277,13 +1283,13 @@ class CastVote(HeliosModel):
     Look for consistency problems
     """
     issues = []
-    
+
     # check the election
     if self.vote.election_uuid != election.uuid:
       issues.append("the vote's election UUID does not match the election for which this vote is being cast")
-    
+
     return issues
-    
+
 class AuditedBallot(models.Model):
   """
   ballots for auditing
@@ -1309,15 +1315,15 @@ class AuditedBallot(models.Model):
       query = query[:limit]
 
     return query
-    
+
 class Trustee(HeliosModel):
   election = models.ForeignKey(Election, models.CASCADE)
-  
+
   uuid = models.CharField(max_length=50)
   name = models.CharField(max_length=200)
   email = models.EmailField()
   secret = models.CharField(max_length=100)
-  
+
   # public key
   public_key = LDObjectField(type_hint = 'legacy/EGPublicKey',
                              null=True)
@@ -1328,11 +1334,11 @@ class Trustee(HeliosModel):
   # Helios is playing the role of the trustee.
   secret_key = LDObjectField(type_hint = 'legacy/EGSecretKey',
                              null=True)
-  
+
   # proof of knowledge of secret key
   pok = LDObjectField(type_hint = 'legacy/DLogProof',
                       null=True)
-  
+
   # decryption factors
   decryption_factors = LDObjectField(type_hint = datatypes.arrayOf(datatypes.arrayOf('core/BigInteger')),
                                      null=True)
@@ -1342,7 +1348,7 @@ class Trustee(HeliosModel):
 
   class Meta(object):
     unique_together = (('election', 'email'))
-    
+
   def save(self, *args, **kwargs):
     """
     override this just to get a hook
@@ -1351,9 +1357,9 @@ class Trustee(HeliosModel):
     if not self.secret:
       self.secret = heliosutils.random_string(12)
       self.election.append_log("Trustee %s added" % self.name)
-      
+
     super(Trustee, self).save(*args, **kwargs)
-  
+
   @classmethod
   def get_by_election(cls, election):
     return cls.objects.filter(election = election)
@@ -1361,7 +1367,7 @@ class Trustee(HeliosModel):
   @classmethod
   def get_by_uuid(cls, uuid):
     return cls.objects.get(uuid = uuid)
-    
+
   @classmethod
   def get_by_election_and_uuid(cls, election, uuid):
     return cls.objects.get(election = election, uuid = uuid)
@@ -1375,8 +1381,8 @@ class Trustee(HeliosModel):
 
   @property
   def datatype(self):
-    return self.election.datatype.replace('Election', 'Trustee')    
-    
+    return self.election.datatype.replace('Election', 'Trustee')
+
   def verify_decryption_proofs(self):
     """
     verify that the decryption proofs match the tally for the election

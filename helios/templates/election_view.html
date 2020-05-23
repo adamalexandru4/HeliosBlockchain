@@ -84,8 +84,14 @@ once you do this, the election will be immediately open for voting.
 
 {% if not election.encrypted_tally %}
 {% if election.tallying_started_at %}
+{% if election.voters_who_voted_json %}
+<div class="d-flex justify-content-center">
+<div class="btn btn-danger">Election has been hacked!</div><br />
+</div>
+{% else %}
 Tally computation is under way.<br />
 Reload this page in a couple of minutes.
+{% endif %}
 {% else %}
 <div class="d-flex justify-content-center">
 <a class="btn btn-success" href="{% url "one-election-compute-tally" election.uuid %}">compute encrypted tally</a><br />

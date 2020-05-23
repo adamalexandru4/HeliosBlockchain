@@ -92,17 +92,29 @@ def election_compute_tally(election_id, election_contract_abi):
     Random.atfork()
     election = Election.objects.get(id = election_id)
     election.compute_tally(election_contract_abi)
-    election_notify_admin.delay(election_id = election_id,
-                                subject = "encrypted tally computed",
-                                body = """
-The encrypted tally for election %s has been computed.
 
---
-Helios
-""" % election.name)
-                                
-    if election.has_helios_trustee():
-        tally_helios_decrypt.delay(election_id = election.id)
+    if election.encrypted_tally:
+        election_notify_admin.delay(election_id = election_id,
+                                    subject = "encrypted tally computed",
+                                    body = """
+                                        The encrypted tally for election %s has been computed.
+                                        
+                                        --
+                                        Helios
+                                        """ % election.name)
+
+        if election.has_helios_trustee():
+            tally_helios_decrypt.delay(election_id = election.id)
+    else:
+        election_notify_admin.delay(election_id=election_id,
+                                    subject="election has been hacked",
+                                    body="""
+                                        The encrypted tally for election %s has not been computed.
+                                        The database has been hacked. Check the log!
+                                        --
+                                        Helios
+                                        """ % election.name)
+
 
 @shared_task()
 def tally_helios_decrypt(election_id):
