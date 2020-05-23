@@ -92,7 +92,7 @@
                var new_url = current_url.substring(0, current_url.length - 13) + "view";
                window.location.href = new_url;
             } else {
-               myContract.methods.stopElection(Date.now())
+               myContract.methods.stopElection(Math.floor(Date.now() / 1000))
                   .send({from: currentAccount})
                   .on('error', function(error, receipt) {
                      alert("There was a problem with the transaction. Please, try again!");
