@@ -499,7 +499,7 @@ class Election(HeliosModel):
           vote_data = datatypes.LDObject.instantiate(voter.vote, 'legacy/EncryptedVote')
           vote_json = vote_data.serialize()
 
-          vote_hash_with_padding = cryptoutils.hash_b64(vote_json.strip())
+          vote_hash_with_padding = cryptoutils.hash_b64(''.join(vote_json.split()))
           vote_hash_with_padding += "=" * ((4 - len(voter.vote_hash) % 4) % 4)
 
           if (vote_from_blockchain_hash_with_padding == vote_hash_with_padding and

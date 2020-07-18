@@ -1,6 +1,7 @@
 {% extends TEMPLATE_BASE %}
 {% block title %}{{election.name}}{% endblock %}
 
+{% load qr_code %}
 {% block content %}
 <div class="container" style="max-width: 50rem;">
   <div style="float: right; margin-bottom: -3.5rem; margin-right: -7.5rem;">
@@ -330,6 +331,11 @@ Anyone can vote in this election.
 <div id="blockchain-audit-body" class="collapse">
 <hr style="background-color: white; margin-top: 5px;">
 {% if election.frozen_at %}
+<div class="row justify-content-center" style="margin-top: 1rem;">
+  <div class="col-sm-12 col-lg-2 text-center" style="background-color: white;">
+      {% qr_from_text election.contract_address size="10" %}
+  </div>
+</div>
 <div class="row" style="margin-top: 1rem;">
   <div class="col-sm-12 col-lg-3">Election Smart-Contract</div>
   <div class="col-sm-12 col-lg-9">

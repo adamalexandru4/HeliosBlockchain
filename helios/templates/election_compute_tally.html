@@ -1,6 +1,6 @@
 {% extends TEMPLATE_BASE %}
 {% block extra-head %}
-<script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/web3@1.2.8/dist/web3.min.js"></script>
 {% endblock %}
 
 {% block title %}Compute Encryted Tally for {{election.name}}{% endblock %}
@@ -87,7 +87,6 @@
           myContract.methods.electionIsFinished().call(function (err,electionIsFinished) {
 
             if(electionIsFinished) {
-
                var current_url = window.location.href;
                var new_url = current_url.substring(0, current_url.length - 13) + "view";
                window.location.href = new_url;
